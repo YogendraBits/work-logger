@@ -26,13 +26,13 @@ jobs:
 
       - name: CF login and target
         run: |
-          cf8 api "${{ secrets.CF_API_ENDPOINT }}"
+          cf8 api "https://${{ secrets.CF_API_ENDPOINT }}"
           cf8 auth "${{ secrets.CF_USERNAME }}" "${{ secrets.CF_PASSWORD }}"
           cf8 target -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
 
       - name: Set environment variables
         run: |
-          cf8 set-env work-logger MONGO_URI "${{ secrets.MONGO_URI }}" || true
+          cf8 set-env work-logger MONGO_URI "mongodb+srv://${{ secrets.MONGO_URI }}"
           cf8 set-env work-logger SECRET_KEY "${{ secrets.SECRET_KEY }}" || true
 
       - name: Push app
