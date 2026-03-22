@@ -31,13 +31,16 @@ jobs:
           cf8 auth "${{ secrets.CF_USERNAME }}" "${{ secrets.CF_PASSWORD }}"
           cf8 target -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
 
+      - name: Push app
+        run: cf8 push work-logger --no-start
+
       - name: Set environment variables
         run: |
           cf8 set-env work-logger MONGO_URI "${{ secrets.MONGO_URI }}"
           cf8 set-env work-logger SECRET_KEY "${{ secrets.SECRET_KEY }}"
 
-      - name: Push app
-        run: cf8 push work-logger
+      - name: Start app
+        run: cf8 start work-logger
 
       - name: Verify deployment
         run: cf8 app work-logger
