@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Work Logger{% endblock %}
+
+{% block content %}
+<input type="hidden" id="current-date" value="{{ today }}">
+
+<!-- Topbar (desktop only) -->
+<div class="topbar">
+  <div class="date-nav">
+    <button class="date-nav-btn" id="prev-day" title="Previous day">&#8592;</button>
+    <div class="date-display-wrap" onclick="document.getElementById('date-picker').showPicker()">
+      <span class="date-display-text"></span>
+      <span class="today-badge-el" style="display:none;">TODAY</span>
+    </div>
+    <input type="date" id="date-picker" value="{{ today }}">
+    <button class="date-nav-btn" id="next-day" title="Next day">&#8594;</button>
+  </div>
+
+  <div class="topbar-stats">
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-t"></span>
+      <span class="stat-pill-label">Tasks</span>
+      <span class="stat-pill-val stat-tasks-val">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-l"></span>
+      <span class="stat-pill-label">Learnings</span>
+      <span class="stat-pill-val stat-learnings-val">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- Page body -->
+<div class="page-body">
+
+  <!-- Mobile date bar (hidden on desktop) -->
+  <div class="mobile-date-bar">
+    <div class="mobile-date-nav">
+      <button class="date-nav-btn" id="mob-prev-day">&#8592;</button>
+      <div class="date-display-wrap" onclick="document.getElementById('date-picker').showPicker()" style="padding:5px 12px;">
+        <span id="date-display"></span>
+        <span class="today-badge" id="today-badge" style="display:none;">TODAY</span>
+      </div>
+      <button class="date-nav-btn" id="mob-next-day">&#8594;</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="stat-pill" style="padding:5px 10px;">
+        <span class="stat-pill-dot dot-t"></span>
+        <span class="stat-pill-val" id="stat-tasks">—</span>
+      </div>
+      <div class="stat-pill" style="padding:5px 10px;">
+        <span class="stat-pill-dot dot-l"></span>
+        <span class="stat-pill-val" id="stat-learnings">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div>
+    <div class="section-header">
+      <div class="section-title">
+        <span class="section-dot dot-tasks"></span>
+        Tasks
+      </div>
+      <button class="add-btn" onclick="openTaskModal()">＋ Add Task</button>
+    </div>
+    <div id="tasks-list"></div>
+  </div>
+
+  <!-- Learnings -->
+  <div>
+    <div class="section-header">
+      <div class="section-title">
+        <span class="section-dot dot-learnings"></span>
+        Learnings
+      </div>
+      <button class="add-btn learning" onclick="openLearningModal()">＋ Add Learning</button>
+    </div>
+    <div id="learnings-list"></div>
+  </div>
+
+</div>
+
+<!-- Task Modal -->
+<div class="modal fade" id="task-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="task-modal-title">New Task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="task-id">
+        <div class="mb-3">
+          <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="task-title" placeholder="What did you work on?">
+        </div>
+        <div class="mb-1">
+          <label class="form-label">Note</label>
+          <textarea class="form-control" id="task-note" rows="3" placeholder="Details, links, context…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-primary-custom" onclick="saveTask()">Save Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Learning Modal -->
+<div class="modal fade" id="learning-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="learning-modal-title">New Learning</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="learning-id">
+        <div class="mb-3">
+          <label class="form-label">What did you learn? <span style="color:var(--danger)">*</span></label>
+          <textarea class="form-control" id="learning-content" rows="4" placeholder="Describe what you learned…"></textarea>
+        </div>
+        <div class="mb-1">
+          <label class="form-label">Tags <span style="color:var(--text-muted);font-weight:400;">(comma-separated)</span></label>
+          <input type="text" class="form-control" id="learning-tags" placeholder="python, flask, mongodb">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-success-custom" onclick="saveLearning()">Save Learning</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

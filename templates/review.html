@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Review — Work Logger{% endblock %}
+
+{% block content %}
+<input type="hidden" id="current-date" value="{{ today }}">
+
+<!-- Topbar -->
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="font-size:15px; font-weight:700; color:var(--text);">📊 Review</span>
+    <span style="font-size:12px; color:var(--text-muted);">Browse your work across a date range</span>
+  </div>
+  <div class="topbar-stats">
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-t"></span>
+      <span class="stat-pill-label">Tasks</span>
+      <span class="stat-pill-val" id="rv-stat-tasks">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-l"></span>
+      <span class="stat-pill-label">Learnings</span>
+      <span class="stat-pill-val" id="rv-stat-learnings">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-pill-dot" style="background:#f59e0b;"></span>
+      <span class="stat-pill-label">Days</span>
+      <span class="stat-pill-val" id="rv-stat-days">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div class="rv-filter-bar">
+  <div class="rv-filter-group">
+    <label class="form-label">From</label>
+    <input type="date" class="form-control" id="rv-from">
+  </div>
+  <div class="rv-filter-group">
+    <label class="form-label">To</label>
+    <input type="date" class="form-control" id="rv-to">
+  </div>
+  <div class="rv-filter-group">
+    <label class="form-label">Show</label>
+    <div class="rv-toggle-group">
+      <button class="rv-toggle active" id="tog-both"  onclick="setFilter('both')">All</button>
+      <button class="rv-toggle"        id="tog-tasks"     onclick="setFilter('tasks')">Tasks</button>
+      <button class="rv-toggle"        id="tog-learnings" onclick="setFilter('learnings')">Learnings</button>
+    </div>
+  </div>
+  <button class="btn-primary-custom" onclick="loadReview()" style="align-self:flex-end; padding:9px 20px;">Search</button>
+  <button class="btn-ghost"          onclick="exportFromReview()" style="align-self:flex-end;" title="Export current range to Excel">📥 Export</button>
+</div>
+
+<!-- Results -->
+<div class="rv-body" id="rv-body">
+  <div class="rv-placeholder">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-text">Pick a date range and click <strong>Search</strong></div>
+  </div>
+</div>
+
+{% endblock %}
