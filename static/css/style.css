@@ -896,6 +896,8 @@ textarea.form-control { resize: vertical; min-height: 88px; }
   box-shadow: var(--shadow-sm);
   flex-shrink: 0;
   z-index: 20;
+  position: sticky;
+  top: 0;
 }
 
 .mobile-brand {
@@ -908,15 +910,16 @@ textarea.form-control { resize: vertical; min-height: 88px; }
 }
 
 .hamburger {
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--border-strong);
   background: #fff;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   box-shadow: var(--shadow-sm);
   transition: all var(--t);
+  -webkit-tap-highlight-color: transparent;
 }
 .hamburger:hover { background: #f5f6fa; }
 
@@ -932,62 +935,7 @@ textarea.form-control { resize: vertical; min-height: 88px; }
 }
 .sidebar-overlay.open { opacity: 1; }
 
-/* ── Responsive ───────────────────────────────────────────── */
-@media (max-width: 768px) {
-  /* Show mobile topbar, hide desktop sidebar */
-  .mobile-topbar { display: flex; }
-
-  .sidebar {
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    z-index: 40;
-    transform: translateX(-100%);
-    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
-    box-shadow: var(--shadow-xl);
-  }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-overlay { display: block; }
-
-  /* Main content takes full width */
-  .main-content { width: 100%; overflow: hidden; }
-
-  /* Hide desktop topbar on daily log, show mobile one instead */
-  .topbar { display: none; }
-
-  /* Page body single column */
-  .page-body {
-    grid-template-columns: 1fr;
-    padding: 16px;
-  }
-
-  /* Review filter bar stacks */
-  .rv-filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 12px 16px;
-    gap: 10px;
-  }
-  .rv-filter-group { flex-direction: row; align-items: center; gap: 10px; }
-  .rv-filter-group .form-label { margin: 0; min-width: 40px; }
-  .rv-filter-group .form-control { width: 100% !important; }
-  .rv-filter-bar .btn-primary-custom,
-  .rv-filter-bar .btn-ghost { width: 100%; text-align: center; }
-
-  /* Review body */
-  .rv-body { padding: 16px; }
-  .rv-day-content { grid-template-columns: 1fr; }
-  .rv-day-spine { width: 60px; }
-
-  /* Topbar stats hidden */
-  .topbar-stats { display: none; }
-
-  /* Mobile daily header shown inside page-body */
-  .mobile-date-bar {
-    display: flex !important;
-  }
-}
-
-/* Mobile date bar (shown only on mobile, inside page-body) */
+/* ── Mobile date bar ──────────────────────────────────────── */
 .mobile-date-bar {
   display: none;
   align-items: center;
@@ -1007,3 +955,145 @@ textarea.form-control { resize: vertical; min-height: 88px; }
   gap: 8px;
 }
 
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Base */
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+
+  /* Show mobile topbar */
+  .mobile-topbar { display: flex; }
+
+  /* Sidebar slide-in drawer */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    box-shadow: var(--shadow-xl);
+    overflow-y: auto;
+    width: 280px;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: block; }
+
+  /* Main content */
+  .main-content { width: 100%; overflow-x: hidden; }
+
+  /* Hide desktop topbar */
+  .topbar { display: none; }
+
+  /* Page body single column */
+  .page-body {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 16px;
+    overflow-x: hidden;
+  }
+
+  /* Show mobile date bar */
+  .mobile-date-bar { display: flex !important; }
+
+  /* Cards — always show actions on touch */
+  .card-actions { opacity: 1 !important; }
+
+  /* Bigger touch targets for icon buttons */
+  .icon-btn {
+    width: 36px; height: 36px;
+    font-size: 14px;
+  }
+
+  /* Add buttons full width on mobile */
+  .section-header { flex-wrap: wrap; gap: 8px; }
+  .add-btn { font-size: 13px; padding: 8px 14px; }
+
+  /* Modals — full screen on mobile */
+  .modal-dialog {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+  }
+  .modal-content {
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+  }
+  .modal.fade .modal-dialog {
+    transform: translateY(100%) !important;
+    transition: transform 0.3s ease !important;
+  }
+  .modal.show .modal-dialog {
+    transform: translateY(0) !important;
+  }
+
+  /* Form controls bigger on mobile */
+  .form-control {
+    font-size: 16px !important; /* prevents iOS zoom */
+    padding: 12px 14px !important;
+  }
+
+  /* Buttons full width in modal footer */
+  .modal-footer {
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 12px 16px 24px !important;
+  }
+  .modal-footer .btn-ghost,
+  .modal-footer .btn-primary-custom,
+  .modal-footer .btn-success-custom {
+    width: 100%;
+    text-align: center;
+    padding: 13px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Review filter bar */
+  .rv-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    gap: 10px;
+  }
+  .rv-filter-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .rv-filter-group .form-label { margin: 0; min-width: 36px; font-size: 11px; }
+  .rv-filter-group .form-control { width: 100% !important; }
+  .rv-toggle-group { flex: 1; }
+  .rv-toggle { flex: 1; padding: 8px 6px; font-size: 12px; }
+  .rv-filter-bar .btn-primary-custom,
+  .rv-filter-bar .btn-ghost { width: 100%; text-align: center; padding: 12px !important; border-radius: 12px !important; }
+
+  /* Review timeline */
+  .rv-body { padding: 12px; }
+  .rv-day-content { grid-template-columns: 1fr; }
+  .rv-day-spine { width: 52px; }
+  .rv-day-date { font-size: 12px; }
+  .rv-day-month { font-size: 10px; }
+
+  /* Nav items bigger tap area */
+  .nav-item { padding: 12px 14px; font-size: 14px; }
+
+  /* Confirm dialog */
+  .confirm-box { width: calc(100vw - 32px); padding: 24px 20px; }
+
+  /* Stat pills compact */
+  .stat-pill { padding: 5px 9px; font-size: 11.5px; }
+
+  /* Login card */
+  .login-card {
+    width: calc(100vw - 32px);
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  /* Date nav buttons bigger */
+  .date-nav-btn { width: 38px; height: 38px; font-size: 15px; }
+}
