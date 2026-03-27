@@ -24,11 +24,13 @@ db = client.get_default_database() if "mongodb+srv" in os.environ.get("MONGO_URI
 tasks_col = db["tasks"]
 learnings_col = db["learnings"]
 users_col = db["users"]
+holidays_col = db["holidays"]
 
 # Ensure indexes
 tasks_col.create_index([("date", ASCENDING)])
 learnings_col.create_index([("date", ASCENDING)])
 users_col.create_index("username", unique=True)
+holidays_col.create_index("date", unique=True)
 
 # ─── Seed default user ────────────────────────────────────────────────────────
 
@@ -136,6 +138,7 @@ def create_task():
         "date": data["date"],
         "title": data["title"].strip(),
         "note": data.get("note", "").strip(),
+        "status": data.get("status", "done"),
         "created_at": now,
         "updated_at": now,
     }
@@ -155,6 +158,8 @@ def update_task(task_id):
         updates["title"] = data["title"].strip()
     if "note" in data:
         updates["note"] = data["note"].strip()
+    if "status" in data and data["status"] in ("done", "in_progress"):
+        updates["status"] = data["status"]
     result = tasks_col.find_one_and_update(
         {"_id": ObjectId(task_id)},
         {"$set": updates},
@@ -172,6 +177,35 @@ def delete_task(task_id):
     if result.deleted_count == 0:
         return jsonify({"error": "not found"}), 404
     return jsonify({"deleted": task_id})
+
+
+@app.route("/api/tasks/<task_id>/carry-forward", methods=["POST"])
+@login_required
+def carry_forward_task(task_id):
+    data = request.get_json()
+    target_date = (data or {}).get("target_date", "").strip()
+    if not target_date:
+        return jsonify({"error": "target_date required"}), 400
+    try:
+        datetime.strptime(target_date, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "invalid date format"}), 400
+    original = tasks_col.find_one({"_id": ObjectId(task_id)})
+    if not original:
+        return jsonify({"error": "task not found"}), 404
+    now = datetime.now(timezone.utc)
+    new_doc = {
+        "date":         target_date,
+        "title":        original["title"],
+        "note":         original.get("note", ""),
+        "status":       "in_progress",
+        "carried_from": str(original["_id"]),
+        "created_at":   now,
+        "updated_at":   now,
+    }
+    result = tasks_col.insert_one(new_doc)
+    new_doc["_id"] = result.inserted_id
+    return jsonify(serialize_doc(new_doc)), 201
 
 
 # ─── Learnings API ────────────────────────────────────────────────────────────
@@ -243,6 +277,112 @@ def review():
     return render_template("review.html", today=today)
 
 
+@app.route("/stats")
+@login_required
+def stats_page():
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return render_template("stats.html", today=today)
+
+
+@app.route("/api/stats")
+@login_required
+def api_stats():
+    import datetime as dt_module
+    from calendar import monthrange
+
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        year  = int(request.args.get("year",  today_str[:4]))
+        month = int(request.args.get("month", today_str[5:7]))
+    except (ValueError, TypeError):
+        return jsonify({"error": "invalid year/month"}), 400
+
+    first_day    = f"{year:04d}-{month:02d}-01"
+    last_day_num = monthrange(year, month)[1]
+    last_day     = f"{year:04d}-{month:02d}-{last_day_num:02d}"
+
+    month_tasks     = tasks_col.count_documents({"date": {"$gte": first_day, "$lte": last_day}})
+    month_learnings = learnings_col.count_documents({"date": {"$gte": first_day, "$lte": last_day}})
+
+    task_dates     = {d["date"] for d in tasks_col.find({}, {"date": 1})}
+    learning_dates = {d["date"] for d in learnings_col.find({}, {"date": 1})}
+    all_logged     = sorted(task_dates | learning_dates)
+
+    holidays_set = {h["date"] for h in holidays_col.find({})}
+
+    today_date = dt_module.date.fromisoformat(today_str)
+    logged_set = set(all_logged)
+
+    def current_streak():
+        streak = 0
+        cur = today_date
+        for _ in range(1826):  # max 5 years back
+            day_str    = cur.isoformat()
+            is_weekend = cur.weekday() >= 5
+            is_holiday = day_str in holidays_set
+            if day_str in logged_set:
+                streak += 1
+            elif is_weekend or is_holiday:
+                pass
+            else:
+                break
+            cur -= dt_module.timedelta(days=1)
+        return streak
+
+    def longest_streak():
+        if not all_logged:
+            return 0
+        start = dt_module.date.fromisoformat(all_logged[0])
+        best = run = 0
+        cur = start
+        while cur <= today_date:
+            day_str    = cur.isoformat()
+            is_weekend = cur.weekday() >= 5
+            is_holiday = day_str in holidays_set
+            if day_str in logged_set:
+                run += 1
+                best = max(best, run)
+            elif is_weekend or is_holiday:
+                pass
+            else:
+                run = 0
+            cur += dt_module.timedelta(days=1)
+        return best
+
+    month_prefix    = f"{year:04d}-{month:02d}-"
+    month_logged    = sorted(d for d in all_logged   if d.startswith(month_prefix))
+    month_holidays  = sorted(h for h in holidays_set if h.startswith(month_prefix))
+
+    return jsonify({
+        "days_logged":    month_logged,
+        "holidays":       month_holidays,
+        "streak":         current_streak(),
+        "longest_streak": longest_streak(),
+        "month_tasks":    month_tasks,
+        "month_learnings": month_learnings,
+        "year":  year,
+        "month": month,
+    })
+
+
+@app.route("/api/holidays/toggle", methods=["POST"])
+@login_required
+def toggle_holiday():
+    data = request.get_json()
+    date_str = (data or {}).get("date", "").strip()
+    if not date_str:
+        return jsonify({"error": "date required"}), 400
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "invalid date format"}), 400
+    if holidays_col.find_one({"date": date_str}):
+        holidays_col.delete_one({"date": date_str})
+        return jsonify({"action": "removed", "date": date_str})
+    holidays_col.insert_one({"date": date_str})
+    return jsonify({"action": "added", "date": date_str})
+
+
 @app.route("/api/review")
 @login_required
 def api_review():
@@ -253,14 +393,27 @@ def api_review():
     if date_from > date_to:
         return jsonify({"error": "from must be <= to"}), 400
 
-    tasks = list(tasks_col.find(
-        {"date": {"$gte": date_from, "$lte": date_to}},
-        sort=[("date", ASCENDING), ("created_at", ASCENDING)]
-    ))
-    learnings = list(learnings_col.find(
-        {"date": {"$gte": date_from, "$lte": date_to}},
-        sort=[("date", ASCENDING), ("created_at", ASCENDING)]
-    ))
+    q = request.args.get("q", "").strip()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+
+    PAGE_SIZE = 7
+
+    task_query = {"date": {"$gte": date_from, "$lte": date_to}}
+    learning_query = {"date": {"$gte": date_from, "$lte": date_to}}
+    if q:
+        task_query["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"note":  {"$regex": q, "$options": "i"}},
+        ]
+        learning_query["content"] = {"$regex": q, "$options": "i"}
+
+    tasks = list(tasks_col.find(task_query,
+        sort=[("date", ASCENDING), ("created_at", ASCENDING)]))
+    learnings = list(learnings_col.find(learning_query,
+        sort=[("date", ASCENDING), ("created_at", ASCENDING)]))
 
     days = {}
     for t in tasks:
@@ -273,11 +426,20 @@ def api_review():
         days[d]["learnings"].append(serialize_doc(l))
 
     sorted_days = [{"date": d, **days[d]} for d in sorted(days.keys())]
+
+    total_days_full = len(sorted_days)
+    total_pages = max(1, (total_days_full + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+    start = (page - 1) * PAGE_SIZE
+    paged_days = sorted_days[start: start + PAGE_SIZE]
+
     return jsonify({
-        "days": sorted_days,
+        "days": paged_days,
         "total_tasks": len(tasks),
         "total_learnings": len(learnings),
-        "total_days": len(sorted_days),
+        "total_days": total_days_full,
+        "page": page,
+        "total_pages": total_pages,
     })
 
 
@@ -336,14 +498,15 @@ def export_excel():
     ws_t = wb.active
     ws_t.title = "Tasks"
     ws_t.freeze_panes = "A2"
-    t_headers = ["Date", "Title", "Note", "Created At"]
+    t_headers = ["Date", "Title", "Note", "Status", "Created At"]
     _style_header_row(ws_t, t_headers, "6C63FF")
     for i, t in enumerate(tasks, 1):
         row = i + 1
         ws_t.cell(row=row, column=1, value=t.get("date", ""))
         ws_t.cell(row=row, column=2, value=t.get("title", ""))
         ws_t.cell(row=row, column=3, value=t.get("note", ""))
-        ws_t.cell(row=row, column=4, value=t.get("created_at", "").isoformat() if isinstance(t.get("created_at"), datetime) else str(t.get("created_at", "")))
+        ws_t.cell(row=row, column=4, value=t.get("status", "done"))
+        ws_t.cell(row=row, column=5, value=t.get("created_at", "").isoformat() if isinstance(t.get("created_at"), datetime) else str(t.get("created_at", "")))
         _style_data_row(ws_t, row, len(t_headers), i % 2 == 0)
     _auto_col_widths(ws_t)
 

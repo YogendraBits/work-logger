@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Stats — Work Logger{% endblock %}
+
+{% block content %}
+<input type="hidden" id="current-date" value="{{ today }}">
+
+<!-- Topbar -->
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="font-size:15px; font-weight:700; color:var(--text);">Stats &amp; Streaks</span>
+    <span style="font-size:12px; color:var(--text-muted);">Your work consistency at a glance</span>
+  </div>
+  <div class="topbar-stats">
+    <div class="stat-pill">
+      <span class="stat-pill-dot" style="background:#f59e0b;"></span>
+      <span class="stat-pill-label">Streak</span>
+      <span class="stat-pill-val" id="st-streak">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-t"></span>
+      <span class="stat-pill-label">Tasks</span>
+      <span class="stat-pill-val" id="st-tasks">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-pill-dot dot-l"></span>
+      <span class="stat-pill-label">Learnings</span>
+      <span class="stat-pill-val" id="st-learnings">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- Stats body -->
+<div class="stats-body">
+
+  <!-- Month navigator -->
+  <div class="stats-month-nav">
+    <button class="date-nav-btn" id="st-prev-month" title="Previous month">&#8592;</button>
+    <span class="stats-month-label" id="st-month-label">—</span>
+    <button class="date-nav-btn" id="st-next-month" title="Next month">&#8594;</button>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="stats-cards-row">
+    <div class="stats-card accent-streak" id="streak-card">
+      <div class="stats-card-icon">🔥</div>
+      <div class="stats-card-val" id="sc-streak">—</div>
+      <div class="stats-card-label">Current Streak</div>
+    </div>
+    <div class="stats-card accent-best">
+      <div class="stats-card-icon">🏆</div>
+      <div class="stats-card-val" id="sc-best">—</div>
+      <div class="stats-card-label">Longest Streak</div>
+    </div>
+    <div class="stats-card accent-tasks">
+      <div class="stats-card-icon">✅</div>
+      <div class="stats-card-val" id="sc-tasks">—</div>
+      <div class="stats-card-label">Tasks This Month</div>
+    </div>
+    <div class="stats-card accent-learnings">
+      <div class="stats-card-icon">💡</div>
+      <div class="stats-card-val" id="sc-learnings">—</div>
+      <div class="stats-card-label">Learnings This Month</div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="stats-legend">
+    <span class="legend-item"><span class="legend-dot logged"></span> Logged</span>
+    <span class="legend-item"><span class="legend-dot holiday"></span> Holiday</span>
+    <span class="legend-item"><span class="legend-dot weekend"></span> Weekend</span>
+  </div>
+
+  <!-- Calendar -->
+  <div class="stats-calendar" id="stats-calendar"></div>
+
+  <div class="stats-hint">Click any day to mark / unmark it as a holiday. Holidays and weekends do not break your streak.</div>
+
+</div>
+{% endblock %}

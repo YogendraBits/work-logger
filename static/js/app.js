@@ -32,15 +32,16 @@ function escHtml(str) {
 /* ── Toast ──────────────────────────────────────────────────────────────────── */
 
 function toast(msg, type = "success") {
-  const icons = { success: "✅", error: "❌", info: "ℹ️" };
+  const icons = { success: "✓", error: "✕", info: "i" };
   const el = document.createElement("div");
   el.className = `toast-item ${type}`;
   el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
   document.getElementById("toast-container").appendChild(el);
+  const duration = type === "error" ? 5000 : 2800;
   setTimeout(() => {
     el.style.animation = "fadeOut 0.3s ease forwards";
     setTimeout(() => el.remove(), 300);
-  }, 2800);
+  }, duration);
 }
 
 /* ── Custom confirm dialog ──────────────────────────────────────────────────── */
@@ -51,7 +52,6 @@ function confirmDialog(msg) {
     overlay.className = "confirm-overlay";
     overlay.innerHTML = `
       <div class="confirm-box">
-        <div class="confirm-icon">🗑️</div>
         <div class="confirm-title">Delete this item?</div>
         <div class="confirm-msg">${msg}</div>
         <div class="confirm-actions">
@@ -60,8 +60,16 @@ function confirmDialog(msg) {
         </div>
       </div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector("#cfn-cancel").onclick = () => { overlay.remove(); resolve(false); };
-    overlay.querySelector("#cfn-ok").onclick = () => { overlay.remove(); resolve(true); };
+    const cancelBtn = overlay.querySelector("#cfn-cancel");
+    const okBtn = overlay.querySelector("#cfn-ok");
+    const onKey = e => {
+      if (e.key === "Escape") { cleanup(); resolve(false); }
+    };
+    const cleanup = () => { document.removeEventListener("keydown", onKey); overlay.remove(); };
+    document.addEventListener("keydown", onKey);
+    cancelBtn.onclick = () => { cleanup(); resolve(false); };
+    okBtn.onclick = () => { cleanup(); resolve(true); };
+    setTimeout(() => cancelBtn.focus(), 50);
   });
 }
 
@@ -82,6 +90,15 @@ async function loadDay(dateStr) {
   document.querySelectorAll(".date-display-text, #date-display").forEach(el => el.textContent = formatDisplayDate(dateStr));
   document.querySelectorAll(".today-badge-el, #today-badge").forEach(el => el.style.display = dateStr === today ? "inline" : "none");
   document.getElementById("date-picker").value = dateStr;
+
+  // Weekend tint on date display
+  const dForNav = new Date(dateStr + "T00:00:00");
+  const isWeekendDay = dForNav.getDay() === 0 || dForNav.getDay() === 6;
+  document.querySelectorAll(".date-display-wrap").forEach(w => w.classList.toggle("weekend-day", isWeekendDay));
+
+  // Jump-to-today pill (desktop only — shows when not on today)
+  const jumpPill = document.getElementById("today-jump-pill");
+  if (jumpPill) jumpPill.style.display = (dateStr !== today) ? "inline-block" : "none";
 
   showSkeletons("tasks-list");
   showSkeletons("learnings-list");
@@ -112,18 +129,49 @@ function renderTasks(tasks) {
       </div>`;
     return;
   }
-  container.innerHTML = tasks.map(t => `
-    <div class="item-card">
+  container.innerHTML = tasks.map(t => {
+    const status = t.status || "done";
+    const isInProgress = status === "in_progress";
+    const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const clockIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    const editIcon  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const trashIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    const arrowIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+    return `
+    <div class="item-card status-${isInProgress ? "inprogress" : "done"}">
       <div class="card-top">
-        <div class="card-title">${escHtml(t.title)}</div>
+        <div class="card-title-wrap">
+          <button class="status-toggle-btn" title="Toggle status"
+                  onclick="toggleTaskStatus('${t._id}', '${status}')">
+            ${isInProgress ? clockIcon : checkIcon}
+          </button>
+          <div class="card-title">${escHtml(t.title)}</div>
+        </div>
         <div class="card-actions">
-          <button class="icon-btn" title="Edit" onclick='openTaskModal(${JSON.stringify(JSON.stringify(t))})'>✏️</button>
-          <button class="icon-btn delete" title="Delete" onclick="deleteTask('${t._id}', '${escHtml(t.title)}')">🗑️</button>
+          ${isInProgress ? `<button class="icon-btn carry-btn" title="Carry forward to tomorrow" onclick="carryForwardTask('${t._id}')">${arrowIcon}</button>` : ""}
+          <button class="icon-btn" title="Edit" onclick='openTaskModal(${JSON.stringify(JSON.stringify(t))})'>${editIcon}</button>
+          <button class="icon-btn delete" title="Delete" onclick="deleteTask('${t._id}', '${escHtml(t.title)}')">${trashIcon}</button>
         </div>
       </div>
       ${t.note ? `<div class="card-note">${escHtml(t.note)}</div>` : ""}
-    </div>
-  `).join("");
+      ${t.carried_from ? `<div class="card-carried-badge">Carried forward</div>` : ""}
+    </div>`;
+  }).join("");
+  container.querySelectorAll(".item-card").forEach((card, i) => {
+    card.classList.add("card-enter");
+    card.style.animationDelay = `${i * 50}ms`;
+  });
+}
+
+async function toggleTaskStatus(id, currentStatus) {
+  const newStatus = currentStatus === "in_progress" ? "done" : "in_progress";
+  const res = await fetch(`/api/tasks/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: newStatus }),
+  });
+  if (res.ok) await loadDay(currentDate);
+  else toast("Failed to update status", "error");
 }
 
 function renderLearnings(learnings) {
@@ -136,13 +184,16 @@ function renderLearnings(learnings) {
       </div>`;
     return;
   }
-  container.innerHTML = learnings.map(l => `
+  container.innerHTML = learnings.map(l => {
+    const editIcon  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const trashIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    return `
     <div class="item-card learning-card">
       <div class="card-top">
-        <div class="card-title" style="font-weight:400;">${escHtml(l.content)}</div>
+        <div class="card-title">${escHtml(l.content)}</div>
         <div class="card-actions">
-          <button class="icon-btn" title="Edit" onclick='openLearningModal(${JSON.stringify(JSON.stringify(l))})'>✏️</button>
-          <button class="icon-btn delete" title="Delete" onclick="deleteLearning('${l._id}', '${escHtml(l.content.slice(0, 40))}')">🗑️</button>
+          <button class="icon-btn" title="Edit" onclick='openLearningModal(${JSON.stringify(JSON.stringify(l))})'>${editIcon}</button>
+          <button class="icon-btn delete" title="Delete" onclick="deleteLearning('${l._id}', '${escHtml(l.content.slice(0, 40))}')">${trashIcon}</button>
         </div>
       </div>
       ${(l.tags || []).length ? `
@@ -150,7 +201,11 @@ function renderLearnings(learnings) {
           ${l.tags.map(tag => `<span class="tag">${escHtml(tag)}</span>`).join("")}
         </div>` : ""}
     </div>
-  `).join("");
+  `}).join("");
+  container.querySelectorAll(".item-card").forEach((card, i) => {
+    card.classList.add("card-enter");
+    card.style.animationDelay = `${i * 50}ms`;
+  });
 }
 
 /* ── Task modal ─────────────────────────────────────────────────────────────── */
@@ -161,16 +216,34 @@ function openTaskModal(taskJson = null) {
   document.getElementById("task-id").value = task ? task._id : "";
   document.getElementById("task-title").value = task ? task.title : "";
   document.getElementById("task-note").value = task ? (task.note || "") : "";
+  const status = task ? (task.status || "done") : "done";
+  document.getElementById("task-status").value = status;
+  document.getElementById("status-done").classList.toggle("active", status === "done");
+  document.getElementById("status-inprogress").classList.toggle("active", status === "in_progress");
   if (!taskModalEl) taskModalEl = new bootstrap.Modal(document.getElementById("task-modal"));
   taskModalEl.show();
   setTimeout(() => document.getElementById("task-title").focus(), 300);
 }
 
+function setTaskStatus(s) {
+  document.getElementById("task-status").value = s;
+  document.getElementById("status-done").classList.toggle("active", s === "done");
+  document.getElementById("status-inprogress").classList.toggle("active", s === "in_progress");
+}
+
 async function saveTask() {
   const id = document.getElementById("task-id").value;
   const title = document.getElementById("task-title").value.trim();
-  if (!title) { document.getElementById("task-title").focus(); return; }
-  const body = { date: currentDate, title, note: document.getElementById("task-note").value.trim() };
+  if (!title) {
+    const inp = document.getElementById("task-title");
+    inp.classList.remove("input-error");
+    void inp.offsetWidth;
+    inp.classList.add("input-error");
+    inp.focus();
+    setTimeout(() => inp.classList.remove("input-error"), 600);
+    return;
+  }
+  const body = { date: currentDate, title, note: document.getElementById("task-note").value.trim(), status: document.getElementById("task-status").value };
   const res = await fetch(id ? `/api/tasks/${id}` : "/api/tasks", {
     method: id ? "PUT" : "POST",
     headers: { "Content-Type": "application/json" },
@@ -209,7 +282,15 @@ function openLearningModal(learningJson = null) {
 async function saveLearning() {
   const id = document.getElementById("learning-id").value;
   const content = document.getElementById("learning-content").value.trim();
-  if (!content) { document.getElementById("learning-content").focus(); return; }
+  if (!content) {
+    const inp = document.getElementById("learning-content");
+    inp.classList.remove("input-error");
+    void inp.offsetWidth;
+    inp.classList.add("input-error");
+    inp.focus();
+    setTimeout(() => inp.classList.remove("input-error"), 600);
+    return;
+  }
   const tags = document.getElementById("learning-tags").value.split(",").map(t => t.trim()).filter(Boolean);
   const body = { date: currentDate, content, tags };
   const res = await fetch(id ? `/api/learnings/${id}` : "/api/learnings", {
@@ -232,6 +313,72 @@ async function deleteLearning(id, preview) {
   const res = await fetch(`/api/learnings/${id}`, { method: "DELETE" });
   if (res.ok) { toast("Learning deleted", "info"); await loadDay(currentDate); }
   else toast("Failed to delete", "error");
+}
+
+async function quickAddTask() {
+  const inp = document.getElementById("quick-add-input");
+  if (!inp) return;
+  const title = inp.value.trim();
+  if (!title) {
+    inp.classList.remove("input-error");
+    void inp.offsetWidth;
+    inp.classList.add("input-error");
+    setTimeout(() => inp.classList.remove("input-error"), 600);
+    inp.focus();
+    return;
+  }
+  const res = await fetch("/api/tasks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ date: currentDate, title, note: "", status: "in_progress" }),
+  });
+  if (res.ok) {
+    inp.value = "";
+    toast("Task added", "success");
+    await loadDay(currentDate);
+  } else {
+    toast("Failed to add task", "error");
+  }
+}
+
+function checkPasswordConfirm() {
+  const newPw = document.getElementById("pw-new")?.value || "";
+  const confirm = document.getElementById("pw-confirm")?.value || "";
+  const confirmEl = document.getElementById("pw-confirm");
+  if (!confirmEl) return;
+  if (!confirm) {
+    confirmEl.classList.remove("pw-match", "pw-mismatch");
+  } else if (newPw === confirm) {
+    confirmEl.classList.add("pw-match");
+    confirmEl.classList.remove("pw-mismatch");
+  } else {
+    confirmEl.classList.add("pw-mismatch");
+    confirmEl.classList.remove("pw-match");
+  }
+}
+
+async function carryForwardTask(id) {
+  const targetDate = shiftDate(currentDate, 1);
+  const res = await fetch(`/api/tasks/${id}/carry-forward`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target_date: targetDate }),
+  });
+  if (res.ok) {
+    const d = new Date(targetDate + "T00:00:00");
+    const label = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    toast(`Carried to ${label} — press → to navigate`, "success");
+    const nextBtn = document.getElementById("next-day") || document.getElementById("mob-next-day");
+    if (nextBtn) {
+      nextBtn.style.transition = "none";
+      nextBtn.style.background = "rgba(108,99,255,0.15)";
+      nextBtn.style.borderColor = "var(--accent-mid)";
+      setTimeout(() => { nextBtn.style.transition = ""; nextBtn.style.background = ""; nextBtn.style.borderColor = ""; }, 900);
+    }
+  } else {
+    const err = await res.json().catch(() => ({}));
+    toast(err.error || "Failed to carry forward", "error");
+  }
 }
 
 /* ── Export ─────────────────────────────────────────────────────────────────── */
@@ -347,22 +494,42 @@ function initReview() {
   document.getElementById("rv-to").value = today;
 }
 
-async function loadReview() {
+async function loadReview(page = 1) {
   const from = document.getElementById("rv-from").value;
   const to   = document.getElementById("rv-to").value;
   if (!from || !to) { toast("Please select both dates", "error"); return; }
   if (from > to)    { toast("From date must be before To date", "error"); return; }
 
-  document.getElementById("rv-body").innerHTML =
-    '<div class="rv-placeholder"><div class="empty-icon">⏳</div><div class="empty-text">Loading…</div></div>';
+  page = Math.max(1, page);
+  window._rvPage = page;
 
-  const res  = await fetch(`/api/review?from=${from}&to=${to}`);
+  document.getElementById("rv-body").innerHTML =
+    '<div style="padding:24px 28px">' +
+    '<div class="skeleton" style="height:90px;margin-bottom:16px"></div>' +
+    '<div class="skeleton" style="height:90px;margin-bottom:16px"></div>' +
+    '<div class="skeleton" style="height:90px"></div></div>';
+
+  const q = document.getElementById("rv-search")?.value.trim() || "";
+  const qParam = q ? `&q=${encodeURIComponent(q)}` : "";
+
+  const res  = await fetch(`/api/review?from=${from}&to=${to}${qParam}&page=${page}`);
   const data = await res.json();
   window._rvData = data;
+  window._rvPage = data.page;
 
   document.getElementById("rv-stat-tasks").textContent     = data.total_tasks;
   document.getElementById("rv-stat-learnings").textContent = data.total_learnings;
   document.getElementById("rv-stat-days").textContent      = data.total_days;
+
+  const pagEl = document.getElementById("rv-pagination");
+  if (data.total_pages > 1) {
+    pagEl.style.display = "flex";
+    document.getElementById("rv-page-info").textContent = `Page ${data.page} of ${data.total_pages}`;
+    document.getElementById("rv-prev-page").disabled = data.page <= 1;
+    document.getElementById("rv-next-page").disabled = data.page >= data.total_pages;
+  } else {
+    pagEl.style.display = "none";
+  }
 
   renderReview(data);
 }
@@ -394,6 +561,8 @@ function renderReview(data) {
     const dayNum  = dt.toLocaleDateString("en-GB", { day: "2-digit" });
     const month   = dt.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
     const isLast  = i === days.length - 1;
+    const dow     = dt.getDay(); // 0=Sun, 6=Sat
+    const isWeekendDay = dow === 0 || dow === 6;
 
     const gridClass = !showTasks ? "learnings-only" : !showLearnings ? "tasks-only" : "";
 
@@ -401,8 +570,13 @@ function renderReview(data) {
       <div>
         <div class="rv-section-label"><span class="section-dot dot-tasks"></span>Tasks (${d.tasks.length})</div>
         ${d.tasks.length ? d.tasks.map(t => `
-          <div class="rv-card">
-            <div class="rv-card-title">${escHtml(t.title)}</div>
+          <div class="rv-card rv-card-task">
+            <div class="rv-card-title">
+              ${(t.status || "done") === "in_progress"
+                ? '<span class="status-badge badge-inprogress">In Progress</span>'
+                : '<span class="status-badge badge-done">Done</span>'}
+              ${escHtml(t.title)}
+            </div>
             ${t.note ? `<div class="rv-card-note">${escHtml(t.note)}</div>` : ""}
           </div>`).join("") : '<div class="rv-empty-day">No tasks</div>'}
       </div>` : "";
@@ -411,7 +585,7 @@ function renderReview(data) {
       <div>
         <div class="rv-section-label"><span class="section-dot dot-learnings"></span>Learnings (${d.learnings.length})</div>
         ${d.learnings.length ? d.learnings.map(l => `
-          <div class="rv-card">
+          <div class="rv-card rv-card-learning">
             <div class="rv-card-content">${escHtml(l.content)}</div>
             ${(l.tags||[]).length ? `<div class="tags-row">${l.tags.map(t=>`<span class="tag">${escHtml(t)}</span>`).join("")}</div>` : ""}
           </div>`).join("") : '<div class="rv-empty-day">No learnings</div>'}
@@ -419,7 +593,7 @@ function renderReview(data) {
 
     return `
       <div class="rv-day-block">
-        <div class="rv-day-spine">
+        <div class="rv-day-spine${isWeekendDay ? " rv-weekend" : ""}">
           <div class="rv-day-label">
             <div class="rv-day-weekday">${weekday}</div>
             <div class="rv-day-date">${dayNum}</div>
@@ -446,6 +620,163 @@ function exportFromReview() {
   a.click();
   a.remove();
   toast(`Exporting ${from} → ${to}`, "info");
+}
+
+/* ── Stats page ──────────────────────────────────────────────────────────────── */
+
+let statsYear, statsMonth;
+
+function initStats() {
+  if (!document.getElementById("stats-calendar")) return;
+  const today = getTodayDate();
+  statsYear  = parseInt(today.slice(0, 4));
+  statsMonth = parseInt(today.slice(5, 7));
+  updateStatsMonthLabel();
+  loadStats();
+
+  document.getElementById("st-prev-month").addEventListener("click", () => {
+    statsMonth--;
+    if (statsMonth < 1) { statsMonth = 12; statsYear--; }
+    updateStatsMonthLabel();
+    loadStats();
+  });
+  document.getElementById("st-next-month").addEventListener("click", () => {
+    statsMonth++;
+    if (statsMonth > 12) { statsMonth = 1; statsYear++; }
+    updateStatsMonthLabel();
+    loadStats();
+  });
+}
+
+function updateStatsMonthLabel() {
+  const d = new Date(statsYear, statsMonth - 1, 1);
+  document.getElementById("st-month-label").textContent =
+    d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
+async function loadStats() {
+  const res  = await fetch(`/api/stats?year=${statsYear}&month=${statsMonth}`);
+  const data = await res.json();
+
+  document.getElementById("st-streak").textContent    = data.streak;
+  document.getElementById("st-tasks").textContent     = data.month_tasks;
+  document.getElementById("st-learnings").textContent = data.month_learnings;
+
+  document.getElementById("sc-streak").textContent    = data.streak;
+  document.getElementById("sc-best").textContent      = data.longest_streak;
+  document.getElementById("sc-tasks").textContent     = data.month_tasks;
+  document.getElementById("sc-learnings").textContent = data.month_learnings;
+
+  // Streak card enhancements
+  const streakCard = document.getElementById("streak-card");
+  if (streakCard) {
+    streakCard.classList.toggle("streak-active", data.streak > 0);
+
+    let subLabel = streakCard.querySelector(".stats-card-sublabel");
+    if (!subLabel) {
+      subLabel = document.createElement("div");
+      subLabel.className = "stats-card-sublabel";
+      streakCard.appendChild(subLabel);
+    }
+    subLabel.textContent = data.streak === 1 ? "day in a row" : "days in a row";
+
+    const todayStr = getTodayDate();
+    const loggedToday = (data.days_logged || []).includes(todayStr);
+    let warnEl = streakCard.querySelector(".streak-warning");
+    if (data.streak > 0 && !loggedToday) {
+      if (!warnEl) {
+        warnEl = document.createElement("div");
+        warnEl.className = "streak-warning";
+        streakCard.appendChild(warnEl);
+      }
+      warnEl.textContent = "Log today to keep it!";
+    } else if (warnEl) {
+      warnEl.remove();
+    }
+  }
+
+  // Empty state for zero data
+  const statsBody = document.querySelector(".stats-body");
+  const isZero = data.streak === 0 && data.month_tasks === 0 && data.month_learnings === 0;
+  let emptyState = statsBody?.querySelector(".stats-empty-state");
+  if (isZero) {
+    if (!emptyState && statsBody) {
+      emptyState = document.createElement("div");
+      emptyState.className = "stats-empty-state";
+      emptyState.innerHTML = `<div class="empty-text">No work logged yet for this period.<br>Start logging to build your streak!</div>`;
+      statsBody.appendChild(emptyState);
+    }
+  } else if (emptyState) {
+    emptyState.remove();
+  }
+
+  renderCalendar(data);
+}
+
+function renderCalendar(data) {
+  const loggedSet  = new Set(data.days_logged);
+  const holidaySet = new Set(data.holidays);
+  const year  = data.year;
+  const month = data.month;
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  // Mon-based offset: 0=Mon..6=Sun
+  const firstDow = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+
+  const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  let html = '<div class="cal-grid">';
+
+  weekdays.forEach(d => { html += `<div class="cal-header-cell">${d}</div>`; });
+  for (let i = 0; i < firstDow; i++) { html += '<div class="cal-cell cal-empty"></div>'; }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr  = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dow      = (new Date(year, month - 1, day).getDay() + 6) % 7;
+    const todayStr = getTodayDate();
+    const isWeekend  = dow >= 5;
+    const isLogged   = loggedSet.has(dateStr);
+    const isHoliday  = holidaySet.has(dateStr);
+    const isToday    = dateStr === todayStr;
+    const isFuture   = dateStr > todayStr;
+
+    const classes = ["cal-cell",
+      isWeekend ? "cal-weekend"  : "",
+      isLogged  ? "cal-logged"   : "",
+      isHoliday ? "cal-holiday"  : "",
+      isToday   ? "cal-today"    : "",
+      isFuture  ? "cal-future"   : "",
+    ].filter(Boolean).join(" ");
+
+    const d = new Date(year, month - 1, day);
+    const label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    const clickAttr = isFuture ? "" : `onclick="toggleHoliday('${dateStr}')"`;
+
+    html += `<div class="${classes}" ${clickAttr} data-date-label="${label}">
+      <span class="cal-day-num">${day}</span>
+      ${isLogged   ? '<span class="cal-dot cal-dot-logged"></span>'  : ""}
+      ${isHoliday  ? '<span class="cal-dot cal-dot-holiday"></span>' : ""}
+    </div>`;
+  }
+
+  html += "</div>";
+  document.getElementById("stats-calendar").innerHTML = html;
+}
+
+async function toggleHoliday(dateStr) {
+  const res = await fetch("/api/holidays/toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ date: dateStr }),
+  });
+  if (res.ok) {
+    const data = await res.json();
+    toast(data.action === "added"
+      ? `${dateStr} marked as holiday`
+      : `${dateStr} holiday removed`, "info");
+    loadStats();
+  } else {
+    toast("Failed to toggle holiday", "error");
+  }
 }
 
 /* ── Keyboard shortcuts ─────────────────────────────────────────────────────── */
@@ -481,7 +812,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isDaily) {
     document.getElementById("prev-day").addEventListener("click", () => loadDay(shiftDate(currentDate, -1)));
     document.getElementById("next-day").addEventListener("click", () => loadDay(shiftDate(currentDate, 1)));
-    // mobile buttons
     document.getElementById("mob-prev-day")?.addEventListener("click", () => loadDay(shiftDate(currentDate, -1)));
     document.getElementById("mob-next-day")?.addEventListener("click", () => loadDay(shiftDate(currentDate, 1)));
     document.getElementById("date-picker").addEventListener("change", e => {
@@ -490,10 +820,42 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("task-title").addEventListener("keydown", e => {
       if (e.key === "Enter") saveTask();
     });
+    document.getElementById("quick-add-input")?.addEventListener("keydown", e => {
+      if (e.key === "Enter") quickAddTask();
+    });
+    document.getElementById("today-jump-pill")?.addEventListener("click", () => loadDay(getTodayDate()));
     loadDay(currentDate);
   }
 
   if (isReview) {
     initReview();
+    // Search clear button
+    const rvSearch = document.getElementById("rv-search");
+    const rvWrap = rvSearch?.closest(".rv-search-wrap");
+    rvSearch?.addEventListener("input", () => {
+      rvWrap?.classList.toggle("has-value", rvSearch.value.length > 0);
+    });
+    document.getElementById("rv-search-clear")?.addEventListener("click", () => {
+      rvSearch.value = "";
+      rvWrap?.classList.remove("has-value");
+      rvSearch.focus();
+    });
+    rvSearch?.addEventListener("keydown", e => { if (e.key === "Enter") loadReview(1); });
+    // Filter toggle
+    document.getElementById("rv-filter-toggle")?.addEventListener("click", function() {
+      const fields = document.getElementById("rv-filter-fields");
+      const isCollapsed = fields.classList.toggle("collapsed");
+      this.classList.toggle("active", !isCollapsed);
+      const chevron = this.querySelector(".toggle-chevron");
+      if (chevron) chevron.style.transform = isCollapsed ? "rotate(0deg)" : "rotate(180deg)";
+    });
   }
+
+  if (!!document.getElementById("stats-calendar")) {
+    initStats();
+  }
+
+  // Password confirm inline check (available on all pages via base.html modal)
+  document.getElementById("pw-confirm")?.addEventListener("input", checkPasswordConfirm);
+  document.getElementById("pw-new")?.addEventListener("input", checkPasswordConfirm);
 });

@@ -14,6 +14,7 @@
     </div>
     <input type="date" id="date-picker" value="{{ today }}">
     <button class="date-nav-btn" id="next-day" title="Next day">&#8594;</button>
+    <button class="today-jump-pill" id="today-jump-pill" style="display:none;" title="Jump to today">Today</button>
   </div>
 
   <div class="topbar-stats">
@@ -62,7 +63,15 @@
         <span class="section-dot dot-tasks"></span>
         Tasks
       </div>
-      <button class="add-btn" onclick="openTaskModal()">＋ Add Task</button>
+      <button class="add-btn" onclick="openTaskModal()">More options</button>
+    </div>
+    <div class="quick-add-row">
+      <input type="text" class="quick-add-input" id="quick-add-input" placeholder="Add a task and press Enter…">
+      <button class="quick-add-btn" onclick="quickAddTask()" title="Add task">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
     </div>
     <div id="tasks-list"></div>
   </div>
@@ -74,7 +83,7 @@
         <span class="section-dot dot-learnings"></span>
         Learnings
       </div>
-      <button class="add-btn learning" onclick="openLearningModal()">＋ Add Learning</button>
+      <button class="add-btn learning" onclick="openLearningModal()">+ Add Learning</button>
     </div>
     <div id="learnings-list"></div>
   </div>
@@ -95,10 +104,18 @@
           <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
           <input type="text" class="form-control" id="task-title" placeholder="What did you work on?">
         </div>
-        <div class="mb-1">
+        <div class="mb-3">
           <label class="form-label">Note</label>
           <textarea class="form-control" id="task-note" rows="3" placeholder="Details, links, context…"></textarea>
         </div>
+        <div class="mb-1">
+          <label class="form-label">Status</label>
+          <div class="status-toggle-group">
+            <button type="button" class="status-btn active" id="status-done" onclick="setTaskStatus('done')">Done</button>
+            <button type="button" class="status-btn" id="status-inprogress" onclick="setTaskStatus('in_progress')">In Progress</button>
+          </div>
+        </div>
+        <input type="hidden" id="task-status" value="done">
       </div>
       <div class="modal-footer">
         <button class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
