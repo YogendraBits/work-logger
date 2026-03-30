@@ -8,7 +8,7 @@
 <div class="topbar">
   <div class="date-nav">
     <button class="date-nav-btn" id="prev-day" title="Previous day">&#8592;</button>
-    <div class="date-display-wrap" onclick="document.getElementById('date-picker').showPicker()">
+    <div class="date-display-wrap" onclick="openDatePicker(event)">
       <span class="date-display-text"></span>
       <span class="today-badge-el" style="display:none;">TODAY</span>
     </div>
@@ -38,7 +38,7 @@
   <div class="mobile-date-bar">
     <div class="mobile-date-nav">
       <button class="date-nav-btn" id="mob-prev-day">&#8592;</button>
-      <div class="date-display-wrap" onclick="document.getElementById('date-picker').showPicker()" style="padding:5px 12px;">
+      <div class="date-display-wrap" onclick="openDatePicker(event)" style="padding:5px 12px;">
         <span id="date-display"></span>
         <span class="today-badge" id="today-badge" style="display:none;">TODAY</span>
       </div>
@@ -106,6 +106,10 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Note</label>
+          <div class="note-toolbar">
+            <button type="button" class="note-fmt-btn" onclick="fmtNote('bold')" title="Bold"><strong>B</strong></button>
+            <button type="button" class="note-fmt-btn" onclick="fmtNote('italic')" title="Italic"><em>I</em></button>
+          </div>
           <textarea class="form-control" id="task-note" rows="3" placeholder="Details, links, context…"></textarea>
         </div>
         <div class="mb-1">
@@ -150,6 +154,19 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Custom date picker popup -->
+<div id="date-picker-popup" class="dp-popup" style="display:none;">
+  <div class="dp-header">
+    <button class="dp-nav-btn" id="dp-prev-month">&#8592;</button>
+    <span class="dp-month-label" id="dp-month-label"></span>
+    <button class="dp-nav-btn" id="dp-next-month">&#8594;</button>
+  </div>
+  <div class="dp-weekdays">
+    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+  </div>
+  <div class="dp-grid" id="dp-grid"></div>
 </div>
 
 {% endblock %}

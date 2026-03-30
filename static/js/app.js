@@ -29,6 +29,28 @@ function escHtml(str) {
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function renderNote(str) {
+  return escHtml(str)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\n/g, "<br>");
+}
+
+function fmtNote(type) {
+  const ta = document.getElementById("task-note");
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const sel   = ta.value.slice(start, end);
+  const marker = type === "bold" ? "**" : "*";
+  const wrapped = marker + (sel || "text") + marker;
+  ta.setRangeText(wrapped, start, end, "select");
+  if (!sel) {
+    // place cursor inside the markers
+    ta.setSelectionRange(start + marker.length, start + marker.length + 4);
+  }
+  ta.focus();
+}
+
 /* ── Toast ──────────────────────────────────────────────────────────────────── */
 
 function toast(msg, type = "success") {
@@ -115,6 +137,10 @@ async function loadDay(dateStr) {
 
   renderTasks(tasks);
   renderLearnings(learnings);
+
+  // Refresh picker dots if open and on same month
+  const popup = document.getElementById("date-picker-popup");
+  if (popup && popup.style.display !== "none") dpRenderMonth();
 }
 
 /* ── Renderers ──────────────────────────────────────────────────────────────── */
@@ -137,10 +163,12 @@ function renderTasks(tasks) {
     const editIcon  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const trashIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     const arrowIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+    const gripIcon  = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`;
     return `
-    <div class="item-card status-${isInProgress ? "inprogress" : "done"}">
+    <div class="item-card status-${isInProgress ? "inprogress" : "done"}" data-task-id="${t._id}">
       <div class="card-top">
         <div class="card-title-wrap">
+          <div class="drag-handle" title="Drag to reorder">${gripIcon}</div>
           <button class="status-toggle-btn" title="Toggle status"
                   onclick="toggleTaskStatus('${t._id}', '${status}')">
             ${isInProgress ? clockIcon : checkIcon}
@@ -153,7 +181,7 @@ function renderTasks(tasks) {
           <button class="icon-btn delete" title="Delete" onclick="deleteTask('${t._id}', '${escHtml(t.title)}')">${trashIcon}</button>
         </div>
       </div>
-      ${t.note ? `<div class="card-note">${escHtml(t.note)}</div>` : ""}
+      ${t.note ? `<div class="card-note">${renderNote(t.note)}</div>` : ""}
       ${t.carried_from ? `<div class="card-carried-badge">Carried forward</div>` : ""}
     </div>`;
   }).join("");
@@ -161,6 +189,36 @@ function renderTasks(tasks) {
     card.classList.add("card-enter");
     card.style.animationDelay = `${i * 50}ms`;
   });
+  initSortable();
+}
+
+/* ── Drag to reorder ────────────────────────────────────────────────────────── */
+
+let sortableInstance = null;
+
+function initSortable() {
+  const container = document.getElementById("tasks-list");
+  if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
+  if (container.querySelectorAll(".item-card[data-task-id]").length < 2) return;
+  sortableInstance = Sortable.create(container, {
+    handle: ".drag-handle",
+    animation: 150,
+    ghostClass: "sortable-ghost",
+    chosenClass: "sortable-chosen",
+    onEnd: saveTaskOrder,
+  });
+}
+
+async function saveTaskOrder() {
+  const ids = [...document.querySelectorAll("#tasks-list .item-card[data-task-id]")]
+    .map(c => c.dataset.taskId);
+  if (!ids.length) return;
+  const res = await fetch("/api/tasks/reorder", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order: ids }),
+  });
+  if (!res.ok) { toast("Failed to save order", "error"); await loadDay(currentDate); }
 }
 
 async function toggleTaskStatus(id, currentStatus) {
@@ -424,6 +482,94 @@ function doExport() {
   toast(`Exporting ${from} → ${to}`, "info");
 }
 
+/* ── Import ─────────────────────────────────────────────────────────────────── */
+
+let importModalEl;
+
+function openImportModal() {
+  document.getElementById("import-file").value = "";
+  document.getElementById("import-error").style.display = "none";
+  document.getElementById("import-summary").style.display = "none";
+  const importBtn  = document.getElementById("import-btn");
+  const cancelBtn  = document.getElementById("import-cancel-btn");
+  importBtn.style.display = "";
+  importBtn.textContent   = "Import";
+  importBtn.disabled      = false;
+  if (cancelBtn) cancelBtn.textContent = "Cancel";
+  if (!importModalEl) importModalEl = new bootstrap.Modal(document.getElementById("import-modal"));
+  importModalEl.show();
+}
+
+async function doImport() {
+  const fileInput = document.getElementById("import-file");
+  const errEl     = document.getElementById("import-error");
+  const summaryEl = document.getElementById("import-summary");
+  const importBtn = document.getElementById("import-btn");
+  const cancelBtn = document.getElementById("import-cancel-btn");
+
+  errEl.style.display     = "none";
+  summaryEl.style.display = "none";
+
+  if (!fileInput.files.length) {
+    errEl.textContent = "Please select an Excel file.";
+    errEl.style.display = "block"; return;
+  }
+  const file = fileInput.files[0];
+  if (!file.name.toLowerCase().endsWith(".xlsx")) {
+    errEl.textContent = "Only .xlsx files are supported.";
+    errEl.style.display = "block"; return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    errEl.textContent = "File too large. Maximum size is 2 MB.";
+    errEl.style.display = "block"; return;
+  }
+
+  importBtn.textContent = "Importing…";
+  importBtn.disabled    = true;
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  try {
+    const res  = await fetch("/api/import", { method: "POST", body: fd });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent   = data.error || "Import failed.";
+      errEl.style.display = "block";
+      return;
+    }
+
+    const { tasks_imported: ti, tasks_skipped: ts, tasks_invalid: tw,
+            learnings_imported: li, learnings_skipped: ls, learnings_invalid: lw } = data;
+
+    const lines = [];
+    if (ti + ts + tw > 0)
+      lines.push(`Tasks: ${ti} imported, ${ts} skipped (duplicate), ${tw} invalid`);
+    if (li + ls + lw > 0)
+      lines.push(`Learnings: ${li} imported, ${ls} skipped (duplicate), ${lw} invalid`);
+    if (!lines.length) lines.push("No data found in the uploaded file.");
+
+    summaryEl.innerHTML = lines.map(l =>
+      `<div class="import-summary-row">${l}</div>`
+    ).join("");
+    summaryEl.style.display = "block";
+
+    importBtn.style.display = "none";
+    if (cancelBtn) cancelBtn.textContent = "Close";
+
+    toast(`Import complete — ${ti} tasks, ${li} learnings added`, "success");
+    if (document.getElementById("prev-day")) await loadDay(currentDate);
+
+  } catch (_) {
+    errEl.textContent   = "Network error. Please try again.";
+    errEl.style.display = "block";
+  } finally {
+    importBtn.textContent = "Import";
+    importBtn.disabled    = false;
+  }
+}
+
 /* ── Password change ────────────────────────────────────────────────────────── */
 
 function openPasswordModal() {
@@ -577,7 +723,7 @@ function renderReview(data) {
                 : '<span class="status-badge badge-done">Done</span>'}
               ${escHtml(t.title)}
             </div>
-            ${t.note ? `<div class="rv-card-note">${escHtml(t.note)}</div>` : ""}
+            ${t.note ? `<div class="rv-card-note">${renderNote(t.note)}</div>` : ""}
           </div>`).join("") : '<div class="rv-empty-day">No tasks</div>'}
       </div>` : "";
 
@@ -779,6 +925,78 @@ async function toggleHoliday(dateStr) {
   }
 }
 
+/* ── Custom date picker ──────────────────────────────────────────────────────── */
+
+let dpYear, dpMonth, dpLoggedSet = new Set();
+
+async function openDatePicker(e) {
+  e.stopPropagation();
+  const popup = document.getElementById("date-picker-popup");
+
+  if (popup.style.display !== "none") {
+    popup.style.display = "none";
+    return;
+  }
+
+  // Position below the clicked element
+  const rect = e.currentTarget.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + window.scrollY + 5) + "px";
+  popup.style.left = rect.left + "px";
+  popup.style.display = "block";
+
+  // Init to current month if not set
+  const [y, m] = currentDate.split("-").map(Number);
+  if (!dpYear) { dpYear = y; dpMonth = m; }
+
+  await dpRenderMonth();
+}
+
+async function dpFetchLogged(year, month) {
+  const res  = await fetch(`/api/stats?year=${year}&month=${month}`);
+  const data = await res.json();
+  dpLoggedSet = new Set(data.days_logged || []);
+}
+
+async function dpRenderMonth() {
+  document.getElementById("dp-month-label").textContent =
+    new Date(dpYear, dpMonth - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+  await dpFetchLogged(dpYear, dpMonth);
+
+  const today    = getTodayDate();
+  const daysInMo = new Date(dpYear, dpMonth, 0).getDate();
+  const firstDow = (new Date(dpYear, dpMonth - 1, 1).getDay() + 6) % 7; // Mon=0
+
+  let html = "";
+  for (let i = 0; i < firstDow; i++) html += `<div class="dp-cell dp-empty"></div>`;
+
+  for (let d = 1; d <= daysInMo; d++) {
+    const dateStr = `${dpYear}-${String(dpMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const dow     = (new Date(dpYear, dpMonth - 1, d).getDay() + 6) % 7;
+    const classes = ["dp-cell",
+      dow >= 5                 ? "dp-weekend"    : "",
+      dateStr === today        ? "dp-today"      : "",
+      dateStr === currentDate  ? "dp-selected"   : "",
+      dpLoggedSet.has(dateStr) ? "dp-logged-dot" : "",
+    ].filter(Boolean).join(" ");
+    html += `<div class="${classes}" onclick="dpSelectDate('${dateStr}')">${d}</div>`;
+  }
+
+  document.getElementById("dp-grid").innerHTML = html;
+}
+
+function dpSelectDate(dateStr) {
+  document.getElementById("date-picker-popup").style.display = "none";
+  loadDay(dateStr);
+}
+
+function dpClosePicker(e) {
+  const popup = document.getElementById("date-picker-popup");
+  if (popup && !popup.contains(e.target)) {
+    popup.style.display = "none";
+  }
+}
+
 /* ── Keyboard shortcuts ─────────────────────────────────────────────────────── */
 
 document.addEventListener("keydown", e => {
@@ -824,6 +1042,22 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") quickAddTask();
     });
     document.getElementById("today-jump-pill")?.addEventListener("click", () => loadDay(getTodayDate()));
+
+    // Custom date picker month nav + close-on-outside-click
+    document.getElementById("dp-prev-month")?.addEventListener("click", async e => {
+      e.stopPropagation();
+      dpMonth--;
+      if (dpMonth < 1) { dpMonth = 12; dpYear--; }
+      await dpRenderMonth();
+    });
+    document.getElementById("dp-next-month")?.addEventListener("click", async e => {
+      e.stopPropagation();
+      dpMonth++;
+      if (dpMonth > 12) { dpMonth = 1; dpYear++; }
+      await dpRenderMonth();
+    });
+    document.addEventListener("click", dpClosePicker);
+
     loadDay(currentDate);
   }
 

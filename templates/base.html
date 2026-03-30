@@ -54,6 +54,14 @@
         </span>
         Export to Excel
       </button>
+      <button class="nav-item" onclick="closeSidebar(); openImportModal()">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="15"/>
+          </svg>
+        </span>
+        Import from Excel
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -187,8 +195,38 @@
   </div>
 </div>
 
+<!-- Import Modal -->
+<div class="modal fade" id="import-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Import from Excel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+          Upload an <strong>.xlsx</strong> file with a <strong>Tasks</strong> sheet and/or
+          a <strong>Learnings</strong> sheet. Rows with the same date and title/content are skipped.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">Excel File <span style="color:var(--danger)">*</span></label>
+          <input type="file" class="form-control" id="import-file" accept=".xlsx">
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Maximum file size: 2 MB</div>
+        </div>
+        <div id="import-error" style="display:none;" class="login-alert"></div>
+        <div id="import-summary" style="display:none; margin-top:14px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="import-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-primary-custom" id="import-btn" onclick="doImport()">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endif %}
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

@@ -1370,6 +1370,179 @@ textarea.form-control { resize: vertical; min-height: 88px; }
   color: var(--text-muted);
 }
 
+/* ── Custom date picker popup ─────────────────────────────── */
+.dp-popup {
+  position: absolute;
+  z-index: 2000;
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xl);
+  padding: 14px;
+  width: 256px;
+  user-select: none;
+}
+
+.dp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dp-month-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dp-nav-btn {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  background: #fff;
+  color: var(--text-mid);
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--t);
+  padding: 0;
+}
+.dp-nav-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dp-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.dp-weekdays span {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  padding: 3px 0;
+}
+
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dp-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all var(--t);
+  position: relative;
+  padding: 2px;
+  line-height: 1;
+}
+.dp-cell:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-mid);
+  color: var(--accent);
+}
+.dp-cell.dp-empty { cursor: default; pointer-events: none; }
+.dp-cell.dp-weekend { color: var(--amber); }
+.dp-cell.dp-today {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.dp-cell.dp-selected {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  border-color: var(--accent);
+}
+.dp-cell.dp-selected:hover { background: #3d5cf5; }
+.dp-cell.dp-logged-dot::after {
+  content: '';
+  display: block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+.dp-cell.dp-selected.dp-logged-dot::after { background: rgba(255,255,255,0.8); }
+
+/* ── Drag handle ──────────────────────────────────────────── */
+.drag-handle {
+  flex-shrink: 0;
+  width: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+  color: var(--border-strong);
+  opacity: 0;
+  transition: opacity var(--t);
+  margin-top: 2px;
+}
+.drag-handle svg { width: 14px; height: 14px; }
+.item-card:hover .drag-handle { opacity: 1; }
+.drag-handle:active { cursor: grabbing; }
+
+.sortable-ghost {
+  opacity: 0.35;
+  background: var(--accent-soft) !important;
+  border-color: var(--accent-mid) !important;
+}
+.sortable-chosen { box-shadow: var(--shadow-md); }
+
+/* ── Import summary rows ──────────────────────────────────── */
+.import-summary-row {
+  font-size: 13px; font-weight: 500;
+  color: var(--text-mid);
+  padding: 7px 11px;
+  border-radius: var(--radius-xs);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-mid);
+  margin-bottom: 6px;
+}
+.import-summary-row:last-child { margin-bottom: 0; }
+
+/* ── Note formatting toolbar ──────────────────────────────── */
+.note-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.note-fmt-btn {
+  width: 28px; height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  background: #fff;
+  color: var(--text-mid);
+  font-size: 13px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--t);
+  font-family: 'Inter', sans-serif;
+  padding: 0;
+}
+.note-fmt-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1475,6 +1648,7 @@ textarea.form-control { resize: vertical; min-height: 88px; }
 
   .mobile-date-bar { display: flex !important; }
   .card-actions { opacity: 1 !important; }
+  .drag-handle { opacity: 0.45; }
 
   .icon-btn { width: 34px; height: 34px; }
 

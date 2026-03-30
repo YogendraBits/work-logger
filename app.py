@@ -1,11 +1,12 @@
 import io
 import os
+import re
 from datetime import datetime, timezone
 from functools import wraps
 
 from bson import ObjectId
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for, send_file
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, UpdateOne
 from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
 import openpyxl
@@ -16,6 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB upload limit
 
 # MongoDB connection pool
 client = MongoClient(os.environ.get("MONGO_URI", "mongodb://localhost:27017/worklogger"))
@@ -28,6 +30,7 @@ holidays_col = db["holidays"]
 
 # Ensure indexes
 tasks_col.create_index([("date", ASCENDING)])
+tasks_col.create_index([("date", ASCENDING), ("order", ASCENDING)])
 learnings_col.create_index([("date", ASCENDING)])
 users_col.create_index("username", unique=True)
 holidays_col.create_index("date", unique=True)
@@ -123,7 +126,13 @@ def get_tasks():
     date = request.args.get("date")
     if not date:
         return jsonify({"error": "date parameter required"}), 400
-    docs = list(tasks_col.find({"date": date}, sort=[("created_at", ASCENDING)]))
+    pipeline = [
+        {"$match": {"date": date}},
+        {"$addFields": {"_sort_order": {"$ifNull": ["$order", 999999]}}},
+        {"$sort": {"_sort_order": 1, "created_at": 1}},
+        {"$project": {"_sort_order": 0}},
+    ]
+    docs = list(tasks_col.aggregate(pipeline))
     return jsonify([serialize_doc(d) for d in docs])
 
 
@@ -134,17 +143,41 @@ def create_task():
     if not data or not data.get("date") or not data.get("title"):
         return jsonify({"error": "date and title required"}), 400
     now = datetime.now(timezone.utc)
+    order = tasks_col.count_documents({"date": data["date"]})
     doc = {
         "date": data["date"],
         "title": data["title"].strip(),
         "note": data.get("note", "").strip(),
         "status": data.get("status", "done"),
+        "order": order,
         "created_at": now,
         "updated_at": now,
     }
     result = tasks_col.insert_one(doc)
     doc["_id"] = result.inserted_id
     return jsonify(serialize_doc(doc)), 201
+
+
+@app.route("/api/tasks/reorder", methods=["PUT"])
+@login_required
+def reorder_tasks():
+    data = request.get_json()
+    if not data or not isinstance(data.get("order"), list):
+        return jsonify({"error": "order array required"}), 400
+    ops = []
+    for i, item in enumerate(data["order"]):
+        if not isinstance(item, str):
+            continue
+        try:
+            ops.append(UpdateOne(
+                {"_id": ObjectId(item)},
+                {"$set": {"order": i, "updated_at": datetime.now(timezone.utc)}}
+            ))
+        except Exception:
+            continue
+    if ops:
+        tasks_col.bulk_write(ops, ordered=False)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/tasks/<task_id>", methods=["PUT"])
@@ -160,6 +193,8 @@ def update_task(task_id):
         updates["note"] = data["note"].strip()
     if "status" in data and data["status"] in ("done", "in_progress"):
         updates["status"] = data["status"]
+    if "order" in data and isinstance(data["order"], int):
+        updates["order"] = data["order"]
     result = tasks_col.find_one_and_update(
         {"_id": ObjectId(task_id)},
         {"$set": updates},
@@ -530,6 +565,126 @@ def export_excel():
     filename = f"work-log_{date_from}_to_{date_to}.xlsx"
     return send_file(buf, as_attachment=True, download_name=filename,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ─── Import ───────────────────────────────────────────────────────────────────
+
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    return jsonify({"error": "File too large. Maximum size is 2 MB."}), 413
+
+
+@app.route("/api/import", methods=["POST"])
+@login_required
+def import_excel():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    f = request.files["file"]
+    if not f.filename.lower().endswith(".xlsx"):
+        return jsonify({"error": "Only .xlsx files are supported"}), 400
+
+    try:
+        wb = openpyxl.load_workbook(filename=io.BytesIO(f.read()), read_only=True, data_only=True)
+    except Exception:
+        return jsonify({"error": "Invalid or corrupted Excel file"}), 400
+
+    tasks_imported = tasks_skipped = tasks_invalid = 0
+    learnings_imported = learnings_skipped = learnings_invalid = 0
+
+    def parse_date(val):
+        if val is None:
+            return None
+        if isinstance(val, datetime):
+            return val.strftime("%Y-%m-%d")
+        s = str(val).strip()
+        return s if DATE_RE.match(s) else None
+
+    # ── Tasks sheet ──
+    if "Tasks" in wb.sheetnames:
+        ws = wb["Tasks"]
+        rows = iter(ws.rows)
+        next(rows, None)  # skip header
+        for row in rows:
+            vals = [cell.value for cell in row]
+            if len(vals) < 2:
+                tasks_invalid += 1
+                continue
+            date_val = parse_date(vals[0])
+            if not date_val:
+                tasks_invalid += 1
+                continue
+            title_val = str(vals[1]).strip() if vals[1] is not None else ""
+            if not title_val:
+                tasks_invalid += 1
+                continue
+            note_val = str(vals[2]).strip() if len(vals) > 2 and vals[2] is not None else ""
+            status_raw = str(vals[3]).strip().lower() if len(vals) > 3 and vals[3] is not None else "done"
+            status_val = status_raw if status_raw in ("done", "in_progress") else "done"
+
+            if tasks_col.find_one({
+                "date": date_val,
+                "title": {"$regex": f"^{re.escape(title_val)}$", "$options": "i"},
+            }):
+                tasks_skipped += 1
+                continue
+
+            now = datetime.now(timezone.utc)
+            order = tasks_col.count_documents({"date": date_val})
+            tasks_col.insert_one({
+                "date": date_val, "title": title_val, "note": note_val,
+                "status": status_val, "order": order,
+                "created_at": now, "updated_at": now,
+            })
+            tasks_imported += 1
+
+    # ── Learnings sheet ──
+    if "Learnings" in wb.sheetnames:
+        ws = wb["Learnings"]
+        rows = iter(ws.rows)
+        next(rows, None)
+        for row in rows:
+            vals = [cell.value for cell in row]
+            if len(vals) < 2:
+                learnings_invalid += 1
+                continue
+            date_val = parse_date(vals[0])
+            if not date_val:
+                learnings_invalid += 1
+                continue
+            content_val = str(vals[1]).strip() if vals[1] is not None else ""
+            if not content_val:
+                learnings_invalid += 1
+                continue
+            tags_raw = str(vals[2]).strip() if len(vals) > 2 and vals[2] is not None else ""
+            tags_val = [t.strip() for t in tags_raw.split(",") if t.strip()]
+
+            fingerprint = re.escape(content_val[:200])
+            if learnings_col.find_one({
+                "date": date_val,
+                "content": {"$regex": f"^{fingerprint}", "$options": "i"},
+            }):
+                learnings_skipped += 1
+                continue
+
+            now = datetime.now(timezone.utc)
+            learnings_col.insert_one({
+                "date": date_val, "content": content_val, "tags": tags_val,
+                "created_at": now, "updated_at": now,
+            })
+            learnings_imported += 1
+
+    wb.close()
+    return jsonify({
+        "tasks_imported":      tasks_imported,
+        "tasks_skipped":       tasks_skipped,
+        "tasks_invalid":       tasks_invalid,
+        "learnings_imported":  learnings_imported,
+        "learnings_skipped":   learnings_skipped,
+        "learnings_invalid":   learnings_invalid,
+    })
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
