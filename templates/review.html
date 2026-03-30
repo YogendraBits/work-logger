@@ -31,52 +31,111 @@
 
 <!-- Filter bar -->
 <div class="rv-filter-bar">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-    <span style="font-size:13px; font-weight:600; color:var(--text);">Filters</span>
-    <button class="rv-filter-toggle-btn" id="rv-filter-toggle" title="Toggle filters"><span class="toggle-chevron">&#9660;</span></button>
+
+  <!-- Filter header row -->
+  <div class="rv-filter-header">
+    <div class="rv-filter-header-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+      </svg>
+      <span>Filters</span>
+    </div>
+    <button class="rv-filter-toggle-btn" id="rv-filter-toggle" title="Toggle filters">
+      <svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </button>
   </div>
+
+  <!-- Filter fields -->
   <div class="rv-filter-fields" id="rv-filter-fields">
-    <div class="rv-filter-group">
-      <label class="form-label">From</label>
-      <input type="date" class="form-control" id="rv-from">
-    </div>
-    <div class="rv-filter-group">
-      <label class="form-label">To</label>
-      <input type="date" class="form-control" id="rv-to">
-    </div>
-    <div class="rv-search-wrap rv-filter-group">
-      <label class="form-label">Search</label>
-      <input type="text" class="form-control" id="rv-search" placeholder="keyword…">
-      <button class="rv-search-clear" id="rv-search-clear" title="Clear search">&#10005;</button>
-    </div>
-    <div class="rv-filter-group">
-      <label class="form-label">Show</label>
-      <div class="rv-toggle-group">
-        <button class="rv-toggle active" id="tog-both"  onclick="setFilter('both')">All</button>
-        <button class="rv-toggle"        id="tog-tasks"     onclick="setFilter('tasks')">Tasks</button>
-        <button class="rv-toggle"        id="tog-learnings" onclick="setFilter('learnings')">Learnings</button>
+    <div class="rv-filter-row">
+      <!-- Date range -->
+      <div class="rv-filter-group">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control" id="rv-from">
+      </div>
+      <div class="rv-filter-group">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control" id="rv-to">
+      </div>
+
+      <!-- Search -->
+      <div class="rv-search-wrap rv-filter-group rv-filter-grow">
+        <label class="form-label">Search</label>
+        <div class="rv-search-inner">
+          <svg class="rv-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" class="form-control" id="rv-search" placeholder="keyword…">
+          <button class="rv-search-clear" id="rv-search-clear" title="Clear">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
-    <div class="rv-filter-group" style="display:flex; gap:8px; align-self:flex-end;">
-      <button class="btn-primary-custom" onclick="loadReview()" style="padding:9px 20px;">Search</button>
-      <button class="btn-ghost" onclick="exportFromReview()" title="Export current range to Excel">Export</button>
+
+    <div class="rv-filter-row rv-filter-row-bottom">
+      <!-- Type toggle -->
+      <div class="rv-filter-group">
+        <label class="form-label">Show</label>
+        <div class="rv-toggle-group">
+          <button class="rv-toggle active" id="tog-both"      onclick="setFilter('both')">All</button>
+          <button class="rv-toggle"        id="tog-tasks"     onclick="setFilter('tasks')">Tasks</button>
+          <button class="rv-toggle"        id="tog-learnings" onclick="setFilter('learnings')">Learnings</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="rv-filter-actions">
+        <button class="btn-ghost rv-export-btn" onclick="exportFromReview()" title="Export current range to Excel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export
+        </button>
+        <button class="btn-primary-custom rv-search-btn" onclick="loadReview()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Search
+        </button>
+      </div>
     </div>
   </div>
+
 </div>
 
 <!-- Results -->
 <div class="rv-body" id="rv-body">
   <div class="rv-placeholder">
-    <div class="empty-icon">🔍</div>
-    <div class="empty-text">Pick a date range and click <strong>Search</strong></div>
+    <div class="rv-placeholder-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <div class="rv-placeholder-title">Search your work history</div>
+    <div class="rv-placeholder-sub">Pick a date range and click <strong>Search</strong> to browse your tasks &amp; learnings</div>
   </div>
 </div>
 
 <!-- Pagination -->
 <div class="rv-pagination" id="rv-pagination" style="display:none;">
-  <button class="btn-ghost" id="rv-prev-page" onclick="loadReview(window._rvPage - 1)">&#8592; Prev</button>
+  <button class="btn-ghost" id="rv-prev-page" onclick="loadReview(window._rvPage - 1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Prev
+  </button>
   <span class="rv-page-info" id="rv-page-info">Page 1 of 1</span>
-  <button class="btn-ghost" id="rv-next-page" onclick="loadReview(window._rvPage + 1)">Next &#8594;</button>
+  <button class="btn-ghost" id="rv-next-page" onclick="loadReview(window._rvPage + 1)">
+    Next
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
 </div>
 
 {% endblock %}

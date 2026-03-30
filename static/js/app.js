@@ -859,6 +859,25 @@ async function loadStats() {
     }
   }
 
+  // Streak hero enhancements
+  const heroEl = document.getElementById("stats-hero");
+  if (heroEl) {
+    heroEl.classList.toggle("streak-active", data.streak > 0);
+    const todayStr = getTodayDate();
+    const loggedToday = (data.days_logged || []).includes(todayStr);
+    let warnEl = heroEl.querySelector(".stats-hero-warn");
+    if (data.streak > 0 && !loggedToday) {
+      if (!warnEl) {
+        warnEl = document.createElement("div");
+        warnEl.className = "stats-hero-warn";
+        heroEl.querySelector(".stats-hero-left")?.appendChild(warnEl);
+      }
+      warnEl.textContent = "Log today to keep it!";
+    } else if (warnEl) {
+      warnEl.remove();
+    }
+  }
+
   // Empty state for zero data
   const statsBody = document.querySelector(".stats-body");
   const isZero = data.streak === 0 && data.month_tasks === 0 && data.month_learnings === 0;

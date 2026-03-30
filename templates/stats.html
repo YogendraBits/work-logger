@@ -32,6 +32,33 @@
 <!-- Stats body -->
 <div class="stats-body">
 
+  <!-- Hero streak banner -->
+  <div class="stats-hero" id="stats-hero">
+    <div class="stats-hero-left">
+      <div class="streak-ring">
+        <div class="streak-ring-icon"></div>
+        <div class="stats-hero-val" id="sc-streak">—</div>
+        <div class="stats-hero-unit">days</div>
+      </div>
+      <div class="stats-hero-label">Current Streak</div>
+    </div>
+    <div class="stats-hero-divider"></div>
+    <div class="stats-hero-right">
+      <div class="stats-hero-kpi">
+        <span class="stats-hero-kpi-val" id="sc-best">—</span>
+        <span class="stats-hero-kpi-label">Best streak</span>
+      </div>
+      <div class="stats-hero-kpi">
+        <span class="stats-hero-kpi-val" id="sc-tasks">—</span>
+        <span class="stats-hero-kpi-label">Tasks this month</span>
+      </div>
+      <div class="stats-hero-kpi">
+        <span class="stats-hero-kpi-val" id="sc-learnings">—</span>
+        <span class="stats-hero-kpi-label">Learnings this month</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Month navigator -->
   <div class="stats-month-nav">
     <button class="date-nav-btn" id="st-prev-month" title="Previous month">&#8592;</button>
@@ -39,41 +66,21 @@
     <button class="date-nav-btn" id="st-next-month" title="Next month">&#8594;</button>
   </div>
 
-  <!-- Summary cards -->
-  <div class="stats-cards-row">
-    <div class="stats-card accent-streak" id="streak-card">
-      <div class="stats-card-icon">🔥</div>
-      <div class="stats-card-val" id="sc-streak">—</div>
-      <div class="stats-card-label">Current Streak</div>
+  <!-- Legend + Calendar grouped -->
+  <div class="stats-cal-section">
+    <div class="stats-legend">
+      <span class="legend-item"><span class="legend-dot logged"></span> Logged</span>
+      <span class="legend-item"><span class="legend-dot holiday"></span> Holiday</span>
+      <span class="legend-item"><span class="legend-dot weekend"></span> Weekend</span>
     </div>
-    <div class="stats-card accent-best">
-      <div class="stats-card-icon">🏆</div>
-      <div class="stats-card-val" id="sc-best">—</div>
-      <div class="stats-card-label">Longest Streak</div>
-    </div>
-    <div class="stats-card accent-tasks">
-      <div class="stats-card-icon">✅</div>
-      <div class="stats-card-val" id="sc-tasks">—</div>
-      <div class="stats-card-label">Tasks This Month</div>
-    </div>
-    <div class="stats-card accent-learnings">
-      <div class="stats-card-icon">💡</div>
-      <div class="stats-card-val" id="sc-learnings">—</div>
-      <div class="stats-card-label">Learnings This Month</div>
+    <div class="stats-calendar" id="stats-calendar"></div>
+    <div class="stats-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;opacity:0.6;">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Click any day to mark / unmark it as a holiday. Holidays and weekends do not break your streak.
     </div>
   </div>
-
-  <!-- Legend -->
-  <div class="stats-legend">
-    <span class="legend-item"><span class="legend-dot logged"></span> Logged</span>
-    <span class="legend-item"><span class="legend-dot holiday"></span> Holiday</span>
-    <span class="legend-item"><span class="legend-dot weekend"></span> Weekend</span>
-  </div>
-
-  <!-- Calendar -->
-  <div class="stats-calendar" id="stats-calendar"></div>
-
-  <div class="stats-hint">Click any day to mark / unmark it as a holiday. Holidays and weekends do not break your streak.</div>
 
 </div>
 {% endblock %}
