@@ -42,8 +42,19 @@ html, body {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--text);
-  overflow: hidden;
   background: var(--bg);
+}
+
+/* Desktop: contain scroll inside .page-body, not the whole page */
+@media (min-width: 769px) {
+  body { overflow: hidden; }
+}
+
+/* Mobile/tablet: allow natural page scroll */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; overflow-y: auto; }
+  .main-content { overflow-y: auto; }
+  .page-body { overflow-y: visible; }
 }
 
 /* ── Layout ─────────────────────────────────────────────── */
@@ -407,6 +418,51 @@ html, body {
 }
 
 .learning-card .card-title { font-weight: 400; font-size: 13.5px; color: var(--text-mid); }
+
+.card-title-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-expandable {
+  overflow: hidden;
+  max-height: 4.8em;
+  transition: max-height 0.25s ease;
+}
+
+.card-expandable .card-note {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-card.card-expanded .card-expandable {
+  max-height: 600px;
+}
+
+.item-card.card-expanded .card-expandable .card-note {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  display: block;
+}
+
+.item-card.card-expanded .card-title-clamped {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  display: block;
+}
+
+.chevron-icon {
+  width: 14px; height: 14px;
+  transition: transform 0.25s ease;
+}
+
+.expand-btn.chevron-up .chevron-icon {
+  transform: rotate(180deg);
+}
 
 .card-note {
   font-size: 12px; color: var(--text-muted); margin-top: 5px; line-height: 1.55;
@@ -1616,7 +1672,54 @@ textarea.form-control { resize: vertical; min-height: 88px; }
   gap: 7px;
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE  — four tiers
+   xs  mobile        ≤ 480px
+   sm  large mobile  481–768px
+   md  tablet        769–1024px
+   lg  desktop       ≥ 1025px  (default, no query needed)
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (769–1024px) ──────────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root { --sidebar-w: 200px; }
+
+  .page-body {
+    padding: 16px 18px;
+    gap: 16px;
+  }
+
+  .topbar { padding: 0 18px; }
+
+  /* Collapse stat labels on tablet topbar to save space */
+  .stat-pill-label { display: none; }
+
+  /* Slightly smaller cards */
+  .item-card { padding: 11px 13px; }
+
+  /* Stats row: 2×2 on tablet */
+  .stats-cards-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stats-card-val { font-size: 26px; }
+  .stats-calendar { max-width: 100%; }
+
+  /* Review body */
+  .rv-body { padding: 16px 18px; }
+  .rv-day-content { gap: 10px; }
+  .rv-timeline { max-width: 100%; }
+
+  /* Review filter bar */
+  .rv-filter-bar { padding: 12px 18px; gap: 10px; }
+  .rv-filter-group .form-control { width: 130px !important; }
+  #rv-search { width: 150px !important; }
+
+  .stats-body { padding: 16px 18px; }
+
+  /* Make card actions always visible on touch/tablet */
+  .card-actions { opacity: 1 !important; }
+  .drag-handle { opacity: 0.4; }
+}
+
+/* ── Mobile shared (≤ 768px) ──────────────────────────────── */
 @media (max-width: 768px) {
   html { -webkit-text-size-adjust: 100%; }
   body { overflow-x: hidden; }
@@ -1644,17 +1747,29 @@ textarea.form-control { resize: vertical; min-height: 88px; }
     padding: 12px;
     gap: 14px;
     overflow-x: hidden;
+    /* allow natural scroll on mobile */
+    overflow-y: auto;
   }
 
   .mobile-date-bar { display: flex !important; }
   .card-actions { opacity: 1 !important; }
   .drag-handle { opacity: 0.45; }
 
-  .icon-btn { width: 34px; height: 34px; }
+  /* Larger touch targets */
+  .icon-btn { width: 36px; height: 36px; }
+  .icon-btn svg { width: 15px; height: 15px; }
 
   .section-header { flex-wrap: wrap; gap: 7px; }
   .add-btn { font-size: 12.5px; padding: 7px 12px; }
 
+  /* Quick-add full-width */
+  .quick-add-input { font-size: 16px !important; }
+  .quick-add-btn { width: 38px; height: 38px; }
+
+  /* Cards */
+  .item-card { padding: 12px 13px; margin-bottom: 9px; }
+
+  /* Bottom-sheet modals */
   .modal-dialog {
     margin: 0 !important;
     max-width: 100% !important;
@@ -1666,33 +1781,45 @@ textarea.form-control { resize: vertical; min-height: 88px; }
     top: auto !important;
   }
   .modal-content {
-    border-radius: 12px 12px 0 0 !important;
+    border-radius: 16px 16px 0 0 !important;
     border-bottom: none !important;
+    /* drag indicator */
+    padding-top: 6px !important;
+  }
+  .modal-content::before {
+    content: '';
+    display: block;
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: var(--border-strong);
+    margin: 0 auto 8px;
   }
   .modal.fade .modal-dialog {
     transform: translateY(100%) !important;
     transition: transform 0.28s ease !important;
   }
-  .modal.show .modal-dialog {
-    transform: translateY(0) !important;
-  }
+  .modal.show .modal-dialog { transform: translateY(0) !important; }
 
+  /* Prevent iOS zoom on input focus */
   .form-control { font-size: 16px !important; padding: 11px 13px !important; }
 
   .modal-footer {
     flex-direction: column !important;
     gap: 8px !important;
-    padding: 12px 16px 24px !important;
+    padding: 12px 16px env(safe-area-inset-bottom, 20px) !important;
   }
   .modal-footer .btn-ghost,
   .modal-footer .btn-primary-custom,
-  .modal-footer .btn-success-custom {
+  .modal-footer .btn-success-custom,
+  .modal-footer .btn-danger-custom {
     width: 100%;
     text-align: center;
-    padding: 12px !important;
+    padding: 13px !important;
     border-radius: var(--radius-xs) !important;
+    font-size: 14px !important;
   }
 
+  /* Review */
   .rv-filter-bar { flex-direction: column; align-items: stretch; padding: 12px; gap: 10px; }
   .rv-filter-fields { flex-direction: column; gap: 10px; }
   .rv-filter-fields.collapsed { max-height: 0; }
@@ -1702,34 +1829,83 @@ textarea.form-control { resize: vertical; min-height: 88px; }
   #rv-search { width: 100% !important; }
   .rv-search-wrap { flex: 1; }
   .rv-toggle-group { flex: 1; }
-  .rv-toggle { flex: 1; padding: 8px 6px; font-size: 12px; }
+  .rv-toggle { flex: 1; padding: 9px 6px; font-size: 12px; }
   .rv-filter-bar .btn-primary-custom,
   .rv-filter-bar .btn-ghost,
   .rv-filter-toggle-btn { width: 100%; text-align: center; padding: 11px !important; border-radius: var(--radius-xs) !important; }
 
-  .rv-pagination { padding: 12px; gap: 10px; }
+  .rv-pagination { padding: 12px; gap: 8px; }
   .rv-pagination .btn-ghost { flex: 1; text-align: center; }
   .rv-body { padding: 12px; }
-  .rv-day-content { grid-template-columns: 1fr; }
-  .rv-day-spine { width: 50px; }
-  .rv-day-date { font-size: 14px; }
-  .rv-day-month { font-size: 10px; }
+  .rv-day-content { grid-template-columns: 1fr; gap: 8px; }
+  .rv-day-spine { width: 48px; }
+  .rv-day-date { font-size: 15px; }
+  .rv-day-month { font-size: 9px; }
+  .rv-timeline { max-width: 100%; }
+  .rv-day-block { gap: 12px; }
 
+  /* Stats */
   .stats-body { padding: 12px; gap: 14px; }
   .stats-cards-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .stats-card-val { font-size: 24px; }
+  .stats-card { padding: 16px 12px; min-height: 90px; }
+  .stats-card-val { font-size: 26px; }
+  .stats-card-icon { font-size: 18px; }
   .stats-calendar { max-width: 100%; }
   .cal-day-num { font-size: 11px; }
+  .stats-month-label { font-size: 14px; min-width: 130px; }
 
+  /* Sidebar nav */
   .nav-item { padding: 11px 12px; font-size: 14px; }
 
+  /* Misc */
   .confirm-box { width: calc(100vw - 32px); padding: 22px 18px; }
   .stat-pill { padding: 4px 8px; font-size: 11.5px; }
-
-  .login-card {
-    width: calc(100vw - 32px);
-    padding: 28px 20px;
-  }
-
   .date-nav-btn { width: 36px; height: 36px; font-size: 14px; }
+
+  .login-card { width: calc(100vw - 32px); padding: 28px 20px; }
+}
+
+/* ── Small mobile (≤ 480px) ───────────────────────────────── */
+@media (max-width: 480px) {
+  :root { --radius: 8px; }
+
+  .page-body { padding: 10px; gap: 12px; }
+
+  /* Tighter topbar date bar */
+  .mobile-date-bar { padding: 8px 10px; }
+  #date-display { font-size: 12px; }
+  .today-badge { font-size: 9px; padding: 1px 5px; }
+
+  /* Cards */
+  .item-card { padding: 10px 11px; margin-bottom: 7px; }
+  .card-title { font-size: 13px; }
+  .card-note  { font-size: 11.5px; }
+
+  /* Section headers */
+  .section-title { font-size: 10px; }
+  .add-btn { font-size: 12px; padding: 6px 10px; }
+
+  /* Stats 2-col still but tighter */
+  .stats-cards-row { gap: 8px; }
+  .stats-card { padding: 13px 10px; min-height: 80px; }
+  .stats-card-val { font-size: 22px; }
+  .stats-card-label { font-size: 10px; }
+
+  /* Calendar cells a touch smaller */
+  .cal-cell { min-width: 28px; min-height: 28px; }
+  .cal-day-num { font-size: 10px; }
+
+  /* Review timeline spine */
+  .rv-day-spine { width: 40px; }
+  .rv-day-date  { font-size: 13px; }
+
+  /* Login */
+  .login-card { width: 100%; border-radius: 0; border-left: none; border-right: none; padding: 24px 16px; }
+
+  /* Confirm box full-width */
+  .confirm-box { width: calc(100vw - 20px); }
+
+  /* Toast full-width */
+  .toast-container { left: 10px; right: 10px; bottom: 14px; }
+  .toast-item { min-width: unset; width: 100%; }
 }

@@ -164,6 +164,8 @@ function renderTasks(tasks) {
     const trashIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     const arrowIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
     const gripIcon  = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`;
+    const hasExtra = t.note || t.carried_from;
+    const chevronIcon = `<svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     return `
     <div class="item-card status-${isInProgress ? "inprogress" : "done"}" data-task-id="${t._id}">
       <div class="card-top">
@@ -173,16 +175,19 @@ function renderTasks(tasks) {
                   onclick="toggleTaskStatus('${t._id}', '${status}')">
             ${isInProgress ? clockIcon : checkIcon}
           </button>
-          <div class="card-title">${escHtml(t.title)}</div>
+          <div class="card-title card-title-clamped">${escHtml(t.title)}</div>
         </div>
         <div class="card-actions">
+          ${hasExtra ? `<button class="icon-btn expand-btn" title="Expand" onclick="toggleCardExpand(this)">${chevronIcon}</button>` : ""}
           ${isInProgress ? `<button class="icon-btn carry-btn" title="Carry forward to tomorrow" onclick="carryForwardTask('${t._id}')">${arrowIcon}</button>` : ""}
           <button class="icon-btn" title="Edit" onclick='openTaskModal(${JSON.stringify(JSON.stringify(t))})'>${editIcon}</button>
           <button class="icon-btn delete" title="Delete" onclick="deleteTask('${t._id}', '${escHtml(t.title)}')">${trashIcon}</button>
         </div>
       </div>
-      ${t.note ? `<div class="card-note">${renderNote(t.note)}</div>` : ""}
-      ${t.carried_from ? `<div class="card-carried-badge">Carried forward</div>` : ""}
+      <div class="card-expandable">
+        ${t.note ? `<div class="card-note">${renderNote(t.note)}</div>` : ""}
+        ${t.carried_from ? `<div class="card-carried-badge">Carried forward</div>` : ""}
+      </div>
     </div>`;
   }).join("");
   container.querySelectorAll(".item-card").forEach((card, i) => {
@@ -190,6 +195,14 @@ function renderTasks(tasks) {
     card.style.animationDelay = `${i * 50}ms`;
   });
   initSortable();
+}
+
+/* ── Expand / collapse cards ────────────────────────────────────────────────── */
+
+function toggleCardExpand(btn) {
+  const card = btn.closest(".item-card");
+  const expanded = card.classList.toggle("card-expanded");
+  btn.classList.toggle("chevron-up", expanded);
 }
 
 /* ── Drag to reorder ────────────────────────────────────────────────────────── */
@@ -243,21 +256,26 @@ function renderLearnings(learnings) {
     return;
   }
   container.innerHTML = learnings.map(l => {
-    const editIcon  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-    const trashIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    const editIcon    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const trashIcon   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    const chevronIcon = `<svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const hasExtra = (l.tags || []).length > 0;
     return `
     <div class="item-card learning-card">
       <div class="card-top">
-        <div class="card-title">${escHtml(l.content)}</div>
+        <div class="card-title card-title-clamped">${escHtml(l.content)}</div>
         <div class="card-actions">
+          <button class="icon-btn expand-btn" title="Expand" onclick="toggleCardExpand(this)">${chevronIcon}</button>
           <button class="icon-btn" title="Edit" onclick='openLearningModal(${JSON.stringify(JSON.stringify(l))})'>${editIcon}</button>
           <button class="icon-btn delete" title="Delete" onclick="deleteLearning('${l._id}', '${escHtml(l.content.slice(0, 40))}')">${trashIcon}</button>
         </div>
       </div>
-      ${(l.tags || []).length ? `
-        <div class="tags-row">
-          ${l.tags.map(tag => `<span class="tag">${escHtml(tag)}</span>`).join("")}
-        </div>` : ""}
+      <div class="card-expandable">
+        ${(l.tags || []).length ? `
+          <div class="tags-row">
+            ${l.tags.map(tag => `<span class="tag">${escHtml(tag)}</span>`).join("")}
+          </div>` : ""}
+      </div>
     </div>
   `}).join("");
   container.querySelectorAll(".item-card").forEach((card, i) => {
