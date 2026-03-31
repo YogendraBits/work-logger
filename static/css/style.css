@@ -23,9 +23,9 @@
   --blur-light:   blur(12px);
 
   /* Diffuse shadows — cool blue-grey, like water on glass */
-  --shadow-lift:    0 4px 24px rgba(80, 110, 150, 0.10), 0 1px 4px rgba(0,0,0,0.05);
-  --shadow-float:   0 8px 40px rgba(80, 110, 150, 0.14), 0 2px 8px rgba(0,0,0,0.07);
-  --shadow-modal:   0 16px 64px rgba(60, 90, 140, 0.16), 0 4px 16px rgba(0,0,0,0.09);
+  --shadow-lift:    0 6px 28px rgba(80, 110, 150, 0.14), 0 2px 6px rgba(0,0,0,0.08);
+  --shadow-float:   0 12px 48px rgba(80, 110, 150, 0.18), 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-modal:   0 24px 80px rgba(60, 90, 140, 0.22), 0 6px 24px rgba(0,0,0,0.12);
 
   /* Accent — done/task status only (kept for semantic meaning) */
   --accent:         #5b9bd5;
@@ -127,8 +127,8 @@ body::after {
   box-shadow:
     inset -1px 0 0 rgba(255,255,255,0.35),
     inset 0 1px 0 rgba(255,255,255,0.70),
-    4px 0 32px rgba(80, 120, 200, 0.10),
-    1px 0 8px rgba(0,0,0,0.05);
+    6px 0 40px rgba(80, 120, 200, 0.14),
+    2px 0 12px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -367,8 +367,9 @@ body::after {
   cursor: pointer;
   transition: all 0.22s ease;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.70),
-    0 2px 10px rgba(80,120,200,0.08);
+    inset 0 1px 0 rgba(255,255,255,0.75),
+    0 4px 16px rgba(80,120,200,0.12),
+    0 1px 4px rgba(0,0,0,0.06);
   text-align: left;
   position: relative;
 }
@@ -497,7 +498,7 @@ body::after {
   height: var(--topbar-h);
   background: rgba(235, 242, 252, 0.97);
   border-bottom: 1px solid rgba(255,255,255,0.55);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80), var(--shadow-lift);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80), 0 4px 20px rgba(80,110,160,0.12), 0 1px 6px rgba(0,0,0,0.07);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -518,12 +519,12 @@ body::after {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.38);
   backdrop-filter: var(--blur-light);
   -webkit-backdrop-filter: var(--blur-light);
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255,255,255,0.40);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), var(--shadow-lift);
+  border: 1px solid rgba(255,255,255,0.50);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 3px 12px rgba(80,110,160,0.10), 0 1px 3px rgba(0,0,0,0.06);
   font-size: 12px;
 }
 
@@ -559,6 +560,20 @@ body::after {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
+}
+
+/* ── Section panels (Tasks / Learnings containers) ──────────────────────────── */
+.section-panel {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 6px 28px rgba(80, 110, 150, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.07);
+  padding: 16px;
 }
 
 /* ── Section Header ─────────────────────────────────────────────────────────── */
@@ -810,12 +825,12 @@ body::after {
   flex: 1;
   padding: 10px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(255,255,255,0.52);
-  border-top: 1px solid rgba(255,255,255,0.80);
+  background: rgba(255,255,255,0.60);
+  border-top: 1px solid rgba(255,255,255,0.88);
   border-right: 1px solid rgba(200,220,200,0.40);
   border-bottom: 1px solid rgba(180,200,180,0.28);
   border-left: 1px solid rgba(200,220,200,0.40);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), inset 0 2px 4px rgba(0,0,0,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 3px 10px rgba(80,110,150,0.08), inset 0 2px 4px rgba(0,0,0,0.03);
   font-size: 13.5px;
   color: var(--text);
   outline: none;
@@ -860,10 +875,11 @@ body::after {
   -webkit-backdrop-filter: var(--blur-medium);
   border-radius: var(--radius-card);
   /* Specular inner border — simulates glass edge lit from top-left */
-  border: 1px solid rgba(255,255,255,0.28);
+  border: 1px solid rgba(255,255,255,0.32);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.45),
-    var(--shadow-lift);
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 4px 16px rgba(80, 110, 150, 0.12),
+    0 1px 4px rgba(0,0,0,0.07);
   padding: 0;
   margin-bottom: 8px;
   overflow: hidden;
@@ -882,9 +898,10 @@ body::after {
 .item-card:hover {
   background: var(--glass-card-hover);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    var(--shadow-float);
-  transform: translateY(-2px);
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 10px 40px rgba(80, 110, 150, 0.18),
+    0 3px 10px rgba(0,0,0,0.10);
+  transform: translateY(-3px);
 }
 
 .card-top {
@@ -1103,14 +1120,15 @@ body::after {
   /* No backdrop-filter here — it creates a stacking context that blocks
      pointer events on child inputs in Chrome/Edge/Safari.
      Use a more opaque solid background instead to keep the frosted look. */
-  background: rgba(238, 244, 255, 0.96) !important;
+  background: rgba(238, 244, 255, 0.97) !important;
   border-radius: var(--radius-modal) !important;
   border: none !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.75),
-    inset 1px 0 0 rgba(255,255,255,0.40),
-    var(--shadow-modal) !important;
-  outline: 1px solid rgba(255,255,255,0.40);
+    inset 0 1px 0 rgba(255,255,255,0.80),
+    inset 1px 0 0 rgba(255,255,255,0.45),
+    0 32px 80px rgba(60, 90, 140, 0.26),
+    0 8px 24px rgba(0,0,0,0.14) !important;
+  outline: 1px solid rgba(255,255,255,0.45);
   overflow: hidden;
 }
 
@@ -1372,10 +1390,13 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 }
 
 .confirm-box {
-  background: rgba(238, 244, 255, 0.96);
+  background: rgba(238, 244, 255, 0.97);
   border-radius: var(--radius-modal);
-  border: 1px solid rgba(255,255,255,0.55);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), var(--shadow-modal);
+  border: 1px solid rgba(255,255,255,0.60);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.80),
+    0 32px 80px rgba(60, 90, 140, 0.26),
+    0 8px 24px rgba(0,0,0,0.14);
   padding: 28px 28px 22px;
   max-width: 340px;
   width: calc(100% - 40px);
@@ -1418,12 +1439,12 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 .date-nav-btn {
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.38);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.30);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 6px rgba(0,0,0,0.07);
+  border-top: 1px solid rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 3px 10px rgba(0,0,0,0.10);
   color: var(--text-muted);
   font-size: 14px;
   cursor: pointer;
@@ -1444,9 +1465,9 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   gap: 8px;
   padding: 6px 14px;
   border-radius: var(--radius-pill);
-  background: rgba(255,255,255,0.22);
-  border: 1px solid rgba(255,255,255,0.32);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.32);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.60), 0 3px 10px rgba(80,110,160,0.08);
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
@@ -1506,12 +1527,15 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 .dp-popup {
   position: fixed;
   z-index: 500;
-  background: rgba(240,248,240,0.36);
+  background: rgba(240,248,240,0.38);
   backdrop-filter: blur(36px);
   -webkit-backdrop-filter: blur(36px);
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.38);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), var(--shadow-modal);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 24px 60px rgba(60, 90, 140, 0.22),
+    0 6px 20px rgba(0,0,0,0.12);
   padding: 14px;
   width: 240px;
   animation: scaleIn 0.2s ease;
@@ -2214,11 +2238,11 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 }
 
 .rv-day-label {
-  background: rgba(255,255,255,0.38);
-  border: 1px solid rgba(255,255,255,0.48);
+  background: rgba(255,255,255,0.42);
+  border: 1px solid rgba(255,255,255,0.55);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.65),
-    0 2px 10px rgba(80,110,160,0.08);
+    inset 0 1px 0 rgba(255,255,255,0.70),
+    0 4px 14px rgba(80,110,160,0.12);
   border-radius: 14px;
   padding: 9px 6px 8px;
   text-align: center;
@@ -2307,12 +2331,13 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 /* Entry cards */
 .rv-card {
-  background: rgba(255,255,255,0.30);
+  background: rgba(255,255,255,0.34);
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.38);
+  border: 1px solid rgba(255,255,255,0.44);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    0 1px 5px rgba(80,110,160,0.07);
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 3px 12px rgba(80,110,160,0.10),
+    0 1px 4px rgba(0,0,0,0.06);
   padding: 11px 13px;
   margin-bottom: 7px;
   transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
@@ -2330,29 +2355,30 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 .rv-card-task {
   background: linear-gradient(
-    145deg,
-    rgba(220, 238, 255, 0.42) 0%,
-    rgba(200, 225, 250, 0.32) 100%
+    160deg,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(245, 250, 255, 0.60) 100%
   );
-  border-color: rgba(160, 210, 245, 0.38);
+  border-color: rgba(255, 255, 255, 0.65);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.75),
-    inset 1px 0 0 rgba(255,255,255,0.40),
-    0 3px 12px rgba(80, 140, 210, 0.12),
-    0 1px 4px rgba(0,0,0,0.05);
+    inset 0 1px 0 rgba(255,255,255,0.90),
+    inset 1px 0 0 rgba(255,255,255,0.55),
+    0 6px 20px rgba(91, 155, 213, 0.18),
+    0 2px 6px rgba(91, 155, 213, 0.10);
 }
 
 .rv-card-task:hover {
   background: linear-gradient(
-    145deg,
-    rgba(228, 244, 255, 0.55) 0%,
-    rgba(210, 232, 255, 0.44) 100%
+    160deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(248, 252, 255, 0.75) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.85),
-    inset 1px 0 0 rgba(255,255,255,0.50),
-    0 6px 20px rgba(80, 140, 210, 0.18),
-    0 2px 6px rgba(0,0,0,0.06);
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 1px 0 0 rgba(255,255,255,0.65),
+    0 10px 32px rgba(91, 155, 213, 0.24),
+    0 3px 10px rgba(91, 155, 213, 0.14);
+  transform: translateY(-2px);
 }
 
 .rv-card-learning {
@@ -2458,9 +2484,9 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   border-right: 1px solid rgba(255,255,255,0.22);
   border-bottom: 1px solid rgba(255,255,255,0.18);
   box-shadow:
-    inset 0 2px 0 rgba(255,255,255,0.65),
-    0 8px 40px rgba(80,120,200,0.12),
-    0 2px 8px rgba(0,0,0,0.05);
+    inset 0 2px 0 rgba(255,255,255,0.70),
+    0 12px 50px rgba(80,120,200,0.16),
+    0 3px 12px rgba(0,0,0,0.08);
   overflow: hidden;
   position: relative;
   min-height: 140px;
@@ -2674,9 +2700,9 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   border-right: 1px solid rgba(255,255,255,0.18);
   border-bottom: 1px solid rgba(255,255,255,0.14);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.50),
-    0 4px 20px rgba(80,110,160,0.08),
-    0 1px 4px rgba(0,0,0,0.04);
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 8px 32px rgba(80,110,160,0.13),
+    0 2px 8px rgba(0,0,0,0.07);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -2883,7 +2909,7 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   .mobile-date-bar { display: flex; }
 
   .page-body { padding: 12px 14px; gap: 18px; }
-  .page-columns { grid-template-columns: 1fr; gap: 18px; }
+  .page-columns { grid-template-columns: 1fr; gap: 14px; }
 
   .stats-cards-row { grid-template-columns: repeat(2, 1fr); }
 

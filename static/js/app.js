@@ -82,6 +82,7 @@ function confirmDialog(msg) {
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("open"));
     const cancelBtn = overlay.querySelector("#cfn-cancel");
     const okBtn = overlay.querySelector("#cfn-ok");
     const onKey = e => {
@@ -181,7 +182,7 @@ function renderTasks(tasks) {
           ${hasExtra ? `<button class="icon-btn expand-btn" title="Expand" onclick="toggleCardExpand(this)">${chevronIcon}</button>` : ""}
           ${isInProgress ? `<button class="icon-btn carry-btn" title="Carry forward to tomorrow" onclick="carryForwardTask('${t._id}')">${arrowIcon}</button>` : ""}
           <button class="icon-btn" title="Edit" onclick='openTaskModal(${JSON.stringify(JSON.stringify(t))})'>${editIcon}</button>
-          <button class="icon-btn delete" title="Delete" onclick="deleteTask('${t._id}', '${escHtml(t.title)}')">${trashIcon}</button>
+          <button class="icon-btn delete" title="Delete" data-id="${t._id}" data-title="${escHtml(t.title)}" onclick="deleteTask(this.dataset.id, this.dataset.title)">${trashIcon}</button>
         </div>
       </div>
       <div class="card-expandable">
@@ -267,7 +268,7 @@ function renderLearnings(learnings) {
         <div class="card-actions">
           <button class="icon-btn expand-btn" title="Expand" onclick="toggleCardExpand(this)">${chevronIcon}</button>
           <button class="icon-btn" title="Edit" onclick='openLearningModal(${JSON.stringify(JSON.stringify(l))})'>${editIcon}</button>
-          <button class="icon-btn delete" title="Delete" onclick="deleteLearning('${l._id}', '${escHtml(l.content.slice(0, 40))}')">${trashIcon}</button>
+          <button class="icon-btn delete" title="Delete" data-id="${l._id}" data-preview="${escHtml(l.content.slice(0, 40))}" onclick="deleteLearning(this.dataset.id, this.dataset.preview)">${trashIcon}</button>
         </div>
       </div>
       <div class="card-expandable">
