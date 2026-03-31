@@ -56,6 +56,9 @@
     </div>
   </div>
 
+  <!-- Tasks + Learnings side by side -->
+  <div class="page-columns">
+
   <!-- Tasks -->
   <div>
     <div class="section-header">
@@ -88,8 +91,26 @@
     <div id="learnings-list"></div>
   </div>
 
+  </div><!-- end .page-columns -->
+
 </div>
 
+<!-- Custom date picker popup -->
+<div id="date-picker-popup" class="dp-popup" style="display:none;">
+  <div class="dp-header">
+    <button class="dp-nav-btn" id="dp-prev-month">&#8592;</button>
+    <span class="dp-month-label" id="dp-month-label"></span>
+    <button class="dp-nav-btn" id="dp-next-month">&#8594;</button>
+  </div>
+  <div class="dp-weekdays">
+    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+  </div>
+  <div class="dp-grid" id="dp-grid"></div>
+</div>
+
+{% endblock %}
+
+{% block modals %}
 <!-- Task Modal -->
 <div class="modal fade" id="task-modal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -155,18 +176,4 @@
     </div>
   </div>
 </div>
-
-<!-- Custom date picker popup -->
-<div id="date-picker-popup" class="dp-popup" style="display:none;">
-  <div class="dp-header">
-    <button class="dp-nav-btn" id="dp-prev-month">&#8592;</button>
-    <span class="dp-month-label" id="dp-month-label"></span>
-    <button class="dp-nav-btn" id="dp-next-month">&#8594;</button>
-  </div>
-  <div class="dp-weekdays">
-    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
-  </div>
-  <div class="dp-grid" id="dp-grid"></div>
-</div>
-
 {% endblock %}

@@ -975,9 +975,9 @@ async function openDatePicker(e) {
     return;
   }
 
-  // Position below the clicked element
+  // Position below the clicked element (fixed positioning — viewport-relative)
   const rect = e.currentTarget.getBoundingClientRect();
-  popup.style.top  = (rect.bottom + window.scrollY + 5) + "px";
+  popup.style.top  = (rect.bottom + 5) + "px";
   popup.style.left = rect.left + "px";
   popup.style.display = "block";
 
