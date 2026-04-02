@@ -70,6 +70,12 @@ button, a, [onclick], input, textarea, select {
   cursor: pointer;
 }
 
+input[type="text"], input[type="email"], input[type="password"],
+input[type="search"], input[type="url"], input[type="number"],
+input:not([type]), textarea {
+  cursor: text;
+}
+
 html { font-size: 14px; -webkit-font-smoothing: antialiased; }
 
 body {
@@ -1217,6 +1223,23 @@ body::after {
 
 textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 
+.note-preview {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-input);
+  background: rgba(100,80,210,0.05);
+  border: 1px solid rgba(100,80,210,0.18);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.note-preview strong { font-weight: 600; }
+.note-preview em { font-style: italic; }
+.note-preview p { margin: 0 0 4px; }
+.note-preview ul { margin: 2px 0 6px 18px; padding: 0; }
+.note-preview li { margin-bottom: 2px; }
+.note-preview br { display: block; content: ""; margin: 2px 0; }
+
 /* Password input wrapper */
 .input-password-wrap {
   position: relative;
@@ -1294,10 +1317,15 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
 }
 
 /* ── Note formatting toolbar ─────────────────────────────────────────────────── */
+.note-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
 .note-toolbar {
   display: flex;
   gap: 4px;
-  margin-bottom: 6px;
 }
 
 .note-fmt-btn {
@@ -1316,6 +1344,41 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   background: rgba(255,255,255,0.45);
   color: var(--text);
 }
+
+/* ── Refactor AI button ──────────────────────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-header .modal-title { flex: 1; }
+
+.refactor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(100,80,210,0.30);
+  background: rgba(100,80,210,0.08);
+  color: var(--primary, #6450d2);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.refactor-btn:hover:not(:disabled) {
+  background: rgba(100,80,210,0.16);
+  border-color: rgba(100,80,210,0.50);
+}
+.refactor-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.refactor-btn--loading svg {
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Status badges ──────────────────────────────────────────────────────────── */
 .status-badge {
@@ -2767,7 +2830,7 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   gap: 2px;
 }
 
-.cal-cell:hover:not(.cal-future):not(.cal-empty) {
+.cal-cell:hover:not(.cal-empty) {
   background: rgba(255,255,255,0.42);
   border-color: rgba(255,255,255,0.50);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.60);
@@ -2795,7 +2858,7 @@ textarea.form-control { resize: vertical; min-height: 80px; line-height: 1.5; }
   box-shadow: 0 0 0 2px rgba(91,155,213,0.20), inset 0 1px 0 rgba(255,255,255,0.50);
 }
 
-.cal-cell.cal-future { opacity: 0.35; cursor: default; }
+.cal-cell.cal-future { opacity: 0.35; cursor: pointer; }
 .cal-cell.cal-empty  { background: transparent; cursor: default; border: none; }
 
 .cal-dot {

@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import re
 from datetime import datetime, timezone
@@ -685,6 +686,82 @@ def import_excel():
         "learnings_skipped":   learnings_skipped,
         "learnings_invalid":   learnings_invalid,
     })
+
+
+# ─── LLM Refactor ────────────────────────────────────────────────────────────
+
+import requests as _req
+
+def _get_llm_bearer_token():
+    """Obtain a client-credentials Bearer token from SAP XSUAA for llm_service auth."""
+    uaa_url     = os.environ.get("LLM_SERVICE_UAA_URL", "").rstrip("/")
+    client_id   = os.environ.get("LLM_SERVICE_CLIENT_ID")
+    client_secret = os.environ.get("LLM_SERVICE_CLIENT_SECRET")
+    resp = _req.post(
+        f"{uaa_url}/oauth/token",
+        data={"grant_type": "client_credentials"},
+        auth=(client_id, client_secret),
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()["access_token"]
+
+
+@app.route("/api/refactor-task", methods=["POST"])
+@login_required
+def refactor_task():
+    data = request.get_json()
+    if not data or not data.get("title"):
+        return jsonify({"error": "title is required"}), 400
+
+    title = data.get("title", "").strip()
+    note  = data.get("note", "").strip()
+
+    llm_service_url = os.environ.get("LLM_SERVICE_URL")
+
+    prompt = (
+        "You are a professional work-log writer. "
+        "Rewrite the task title and note into structured, professional English using this exact format:\n\n"
+        "**Description:**\n"
+        "One sentence summarising what was done.\n\n"
+        "**<Relevant Section Header (e.g. Key Activities, Applications Deployed, Changes Made)>:**\n"
+        "- bullet point\n"
+        "- bullet point\n\n"
+        "**Outcome:**\n"
+        "- bullet point\n\n"
+        "Rules:\n"
+        "- Use **bold** for all section headers\n"
+        "- Use bullet points under each section\n"
+        "- Be concise and specific — no filler or repetition\n"
+        "- Only include sections that are relevant to the task\n"
+        "- Do NOT wrap in code fences\n"
+        "Respond ONLY with valid JSON, no extra keys:\n"
+        '{"title": "<refined title>", "note": "<formatted note>"}\n\n'
+        f"Title: {title}\n"
+        f"Note: {note if note else '(none)'}"
+    )
+
+    try:
+        token = _get_llm_bearer_token()
+        resp = _req.post(
+            llm_service_url,
+            json={"prompt": prompt, "model": "anthropic--claude-4-sonnet", "temperature": 0.4, "max_tokens": 800},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        ai_text = resp.json().get("response", "")
+        # Strip markdown code fences if present
+        clean = ai_text.strip()
+        if clean.startswith("```"):
+            clean = re.sub(r"^```[a-z]*\n?", "", clean)
+            clean = re.sub(r"\n?```$", "", clean.rstrip())
+        result = json.loads(clean)
+        if "title" not in result or "note" not in result:
+            raise ValueError("Unexpected JSON shape")
+        return jsonify({"title": result["title"], "note": result["note"]})
+    except Exception as e:
+        return jsonify({"error": f"LLM service error: {str(e)}"}), 502
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

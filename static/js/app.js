@@ -36,6 +36,32 @@ function renderNote(str) {
     .replace(/\n/g, "<br>");
 }
 
+function renderNotePreview(str) {
+  // Render structured markdown into HTML for the preview pane
+  const lines = str.split("\n");
+  let html = "";
+  let inList = false;
+  for (const raw of lines) {
+    const line = raw
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>");
+    if (/^-\s+/.test(raw)) {
+      if (!inList) { html += "<ul>"; inList = true; }
+      html += `<li>${line.replace(/^-\s+/, "")}</li>`;
+    } else {
+      if (inList) { html += "</ul>"; inList = false; }
+      if (line.trim() === "") {
+        html += "<br>";
+      } else {
+        html += `<p>${line}</p>`;
+      }
+    }
+  }
+  if (inList) html += "</ul>";
+  return html;
+}
+
 function fmtNote(type) {
   const ta = document.getElementById("task-note");
   const start = ta.selectionStart;
@@ -297,6 +323,12 @@ function openTaskModal(taskJson = null) {
   document.getElementById("task-status").value = status;
   document.getElementById("status-done").classList.toggle("active", status === "done");
   document.getElementById("status-inprogress").classList.toggle("active", status === "in_progress");
+  // Show refactor button only when editing an existing task
+  document.getElementById("refactor-btn").style.display = task ? "" : "none";
+  // Hide preview on (re)open
+  const preview = document.getElementById("note-preview");
+  preview.style.display = "none";
+  preview.innerHTML = "";
   if (!taskModalEl) taskModalEl = new bootstrap.Modal(document.getElementById("task-modal"));
   taskModalEl.show();
   setTimeout(() => document.getElementById("task-title").focus(), 300);
@@ -306,6 +338,39 @@ function setTaskStatus(s) {
   document.getElementById("task-status").value = s;
   document.getElementById("status-done").classList.toggle("active", s === "done");
   document.getElementById("status-inprogress").classList.toggle("active", s === "in_progress");
+}
+
+async function refactorTask() {
+  const title = document.getElementById("task-title").value.trim();
+  if (!title) { toast("Add a title before refactoring.", "error"); return; }
+
+  const btn = document.getElementById("refactor-btn");
+  btn.disabled = true;
+  btn.classList.add("refactor-btn--loading");
+
+  try {
+    const res = await fetch("/api/refactor-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        note: document.getElementById("task-note").value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || "Refactor failed.", "error"); return; }
+    document.getElementById("task-title").value = data.title;
+    document.getElementById("task-note").value  = data.note;
+    const preview = document.getElementById("note-preview");
+    preview.innerHTML = renderNotePreview(data.note);
+    preview.style.display = "";
+    toast("Task refined by AI.", "success");
+  } catch (e) {
+    toast("Could not reach AI service.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove("refactor-btn--loading");
+  }
 }
 
 async function saveTask() {
@@ -933,7 +998,7 @@ function renderCalendar(data) {
 
     const d = new Date(year, month - 1, day);
     const label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-    const clickAttr = isFuture ? "" : `onclick="toggleHoliday('${dateStr}')"`;
+    const clickAttr = `onclick="toggleHoliday('${dateStr}')"`;
 
     html += `<div class="${classes}" ${clickAttr} data-date-label="${label}">
       <span class="cal-day-num">${day}</span>
@@ -1075,6 +1140,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.getElementById("task-title").addEventListener("keydown", e => {
       if (e.key === "Enter") saveTask();
+    });
+    document.getElementById("task-note").addEventListener("input", () => {
+      const preview = document.getElementById("note-preview");
+      preview.style.display = "none";
+      preview.innerHTML = "";
     });
     document.getElementById("quick-add-input")?.addEventListener("keydown", e => {
       if (e.key === "Enter") quickAddTask();
